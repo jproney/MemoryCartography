@@ -19,8 +19,8 @@ def build_map(executable, break_line, program_args):
     maps = [re.split(r'\s{1,}', s)[1:] for s in gdb.execute("info proc mappings", False, True).split("\n")[4:-1]]
     mapdict={}
     for segment in maps:
-        segname = segment[-1] if len(segment[-1]) > 0 else "[anon]"
-        if segname in ["[vvar]", "[vdso]", "[vsyscall]"]: #ignore these regions
+        segname = segment[-1]
+        if segname in ["[vvar]", "[vdso]", "[vsyscall]",""]: #ignore these regions
             continue
         if segname not in mapdict:
             mapdict[segname] = [(int(segment[0],16), int(segment[1],16))]
@@ -54,4 +54,4 @@ def build_map(executable, break_line, program_args):
                         memgraph[regname] = []
                     memgraph[regname].append((regname, addr-region[0], dstseg + "_" + str(dstreg), offset)) 
 
-    print(memgraph)
+    print(memgraph[maps[0][-1] + "_0"])
