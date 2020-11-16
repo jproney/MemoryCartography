@@ -20,6 +20,8 @@ def build_map(executable, break_line, program_args):
     mapdict={}
     for segment in maps:
         segname = segment[-1] if len(segment[-1]) > 0 else "[anon]"
+        if segname in ["[vvar]", "[vdso]", "[vsyscall]"]: #ignore these regions
+            continue
         if segname not in mapdict:
             mapdict[segname] = [(int(segment[0],16), int(segment[1],16))]
         else:
@@ -27,4 +29,29 @@ def build_map(executable, break_line, program_args):
                 mapdict[segname][-1] = (mapdict[segname][-1][0], int(segment[1], 16))
             else:
                 mapdict[segname].append((int(segment[0],16), int(segment[1],16)))
+        
     print(mapdict)
+    
+    def check_pointer(val):
+        #is val a pointer to any of our mapped regions?
+        for seg in mapdict.keys():
+            for i,reg in enumerate(mapdict[seg]):
+                if reg[0] <= val and val < reg[1]:
+                    return seg, i, val-reg[0]
+        return None
+
+    memgraph = {} #edge list
+    
+    for segname in mapdict.keys():
+        for i,region in enumerate(mapdict[segname]):
+            for addr in range(region[0], region[1]-7):
+                val = int(gdb.execute("x/g " + str(addr), False, True).split()[-1])
+                dst = check_pointer(val)
+                if dst:
+                    dstseg, dstreg, offset = dst
+                    regname = segname + "_" + str(i)
+                    if regname not in memgraph:
+                        memgraph[regname] = []
+                    memgraph[regname].append((regname, addr-region[0], dstseg + "_" + str(dstreg), offset)) 
+
+    print(memgraph)
