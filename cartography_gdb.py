@@ -22,7 +22,7 @@ def build_maplist(executable, break_line, program_args):
     mapdict={}  #each dict entry is a list of tuples with start and end of each mapped range
     for segment in maps:
         segname = segment[-1]
-        if segname in ["[vvar]", "[vdso]", "[vsyscall]","", "(deleted)"] or segname.split(".")[-1] in ["ttf", "ja"]: #ignore these regions
+        if segname in ["[vvar]", "[vdso]", "[vsyscall]","", "(deleted)"] or segname.split(".")[-1] in ["ttf", "ja"] or segname.split(".")[-1][:5] == "cache": #ignore these regions
             continue
         if segname not in mapdict:
             mapdict[segname] = [(int(segment[0],16), int(segment[1],16))]
