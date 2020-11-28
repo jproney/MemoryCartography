@@ -13,7 +13,8 @@ Construct list of contiguous mapped regions, their offsets, and their names
 """
 def build_maplist(executable, break_line, program_args):
     gdb.execute("file " + executable + " " + " ".join(program_args))
-    gdb.execute("break " + str(break_line))
+    if break_line > 0:
+        gdb.execute("break " + str(break_line))
     gdb.execute("run")
 
     # At breakpoint. Get the addresses of all of the mapped memory regions
@@ -21,7 +22,7 @@ def build_maplist(executable, break_line, program_args):
     mapdict={}  #each dict entry is a list of tuples with start and end of each mapped range
     for segment in maps:
         segname = segment[-1]
-        if segname in ["[vvar]", "[vdso]", "[vsyscall]",""]: #ignore these regions
+        if segname in ["[vvar]", "[vdso]", "[vsyscall]","", "(deleted)"] or segname.split(".")[-1] in ["ttf", "ja"]: #ignore these regions
             continue
         if segname not in mapdict:
             mapdict[segname] = [(int(segment[0],16), int(segment[1],16))]
@@ -68,10 +69,15 @@ def build_graph(maplist):
         for _,_, name_j in maplist:
             memgraph[name_i][name_j] = [] 
 
-    for region in maplist:
-        print("Scanning " + str(region))
+    for i,region in enumerate(maplist):
+        print("Scanning " + str(region) + " ({}/{})".format(i,len(maplist)) + "len = {} bytes".format(region[1] - region[0]))
         for addr in range(region[0], region[1]-7):
-            val = int(gdb.execute("x/g " + str(addr), False, True).split()[-1])
+            if (addr - region[0]) % ((region[1] - region[0])//10) == 0:
+                print("{}%".format(10*(addr - region[0]) / ((region[1] - region[0])//10)))
+            try:
+                val = int(gdb.execute("x/g " + str(addr), False, True).split()[-1])
+            except:
+                continue
             dst = check_pointer(val, maplist)
             if dst:
                 offset, dstseg = dst
