@@ -1,7 +1,7 @@
 """
 Map out allocated memory regions in a specificed binary.
 Example usage:
-gdb -x cartography_gdb.py -ex 'py gdb_main(5201, ["[heap]"])'
+gdb -x cartography_gdb.py -ex 'py gdb_main(5201, ["[heap]_0"], True)'
 """
 
 import gdb #won't work unless script is being run under a GDB process
@@ -59,7 +59,7 @@ def check_pointer(addr, maplist):
 """
 Build the Memory Cartography graph
 """
-def build_graph(maplist, sources=None): #sources = list of source ranges to scan, if None, scan everything
+def build_graph(maplist, sources=None, fulldump=False): #sources = list of source ranges to scan, if None, scan everything, fulldump = dump all of the source regions
     memgraph = {} #adjacency matrix, where entry [i][j] is a list of (src_offset, dst_offset) links between regions i and j
     sourcelist = [x for x in maplist if x[2] in sources] if sources else maplist
     for  _, _, name_i in sourcelist:
@@ -69,6 +69,8 @@ def build_graph(maplist, sources=None): #sources = list of source ranges to scan
 
     for i,region in enumerate(sourcelist):
         print("Scanning " + str(region) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(region[1] - region[0]))
+        if fulldump:
+            gdb.execute("dump memory {}.dump {} {}".format(region[2], region[0], region[1]))
         for addr in range(region[0], region[1]-7):
             if (addr - region[0]) % ((region[1] - region[0])//10) == 0:
                 print("{}%".format(10*(addr - region[0]) / ((region[1] - region[0])//10)))
@@ -85,10 +87,12 @@ def build_graph(maplist, sources=None): #sources = list of source ranges to scan
 """
 Run the full script and save the memory graph
 """
-def gdb_main(pid, sources=None):
+def gdb_main(pid, sources=None, dump=False):
     maplist = build_maplist(pid)
-    memgraph = build_graph(maplist, sources)
+    memgraph = build_graph(maplist, sources, dump)
     with open("memgraph.pickle", "wb") as f:
         pickle.dump(memgraph, f)
+    with open("maplist.pickle", "wb") as f2:
+        pickle.dump(maplist, f2)
     gdb.execute("detach")
     gdb.execute("quit")
