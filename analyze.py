@@ -1,6 +1,14 @@
 import pickle
 import struct 
 import numpy as np
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("binary", help="the binary to build memory map off of")
+parser.add_argument("--break_line", type=int, default=0, help="Which line of the binary to break on? Default waits for user to break")
+parser.add_argument("--num_repeats",type=int, default=3, help="How many times to rebuild the graph to eliminate false positives")
+parser.add_argument("--binary_args", nargs="*", default=[], help="arguments for the input binary")
+args = parser.parse_args()
 
 heapname = "[heap]_0"
 

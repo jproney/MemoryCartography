@@ -59,7 +59,7 @@ def check_pointer(addr, maplist):
 """
 Build the Memory Cartography graph
 """
-def build_graph(maplist, sources=None, fulldump=False): #sources = list of source ranges to scan, if None, scan everything, fulldump = dump all of the source regions
+def build_graph(maplist, sources=None, fulldump=False, dumpname=""): #sources = list of source ranges to scan, if None, scan everything, fulldump = dump all of the source regions
     memgraph = {} #adjacency matrix, where entry [i][j] is a list of (src_offset, dst_offset) links between regions i and j
     sourcelist = [x for x in maplist if x[2] in sources] if sources else maplist
     for  _, _, name_i in sourcelist:
@@ -70,7 +70,7 @@ def build_graph(maplist, sources=None, fulldump=False): #sources = list of sourc
     for i,region in enumerate(sourcelist):
         print("Scanning " + str(region) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(region[1] - region[0]))
         if fulldump:
-            gdb.execute("dump memory {}.dump {} {}".format(region[2], region[0], region[1]))
+            gdb.execute("dump memory {}.dump {} {}".format(dumpname + region[2], region[0], region[1]))
         for addr in range(region[0], region[1]-7):
             if (addr - region[0]) % ((region[1] - region[0])//10) == 0:
                 print("{}%".format(10*(addr - region[0]) / ((region[1] - region[0])//10)))
@@ -87,12 +87,12 @@ def build_graph(maplist, sources=None, fulldump=False): #sources = list of sourc
 """
 Run the full script and save the memory graph
 """
-def gdb_main(pid, sources=None, dump=False):
+def gdb_main(pid, sources=None, dump=False, name=""):
     maplist = build_maplist(pid)
-    memgraph = build_graph(maplist, sources, dump)
-    with open("memgraph.pickle", "wb") as f:
+    memgraph = build_graph(maplist, sources, dump, name)
+    with open(name + "memgraph.pickle", "wb") as f:
         pickle.dump(memgraph, f)
-    with open("maplist.pickle", "wb") as f2:
+    with open(name + "maplist.pickle", "wb") as f2:
         pickle.dump(maplist, f2)
     gdb.execute("detach")
     gdb.execute("quit")
