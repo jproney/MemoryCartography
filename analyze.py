@@ -71,32 +71,45 @@ while all([a%(aln*2) == addrs[0][0]%(aln*2) for run in addrs for a in run]) and 
 preread = 2
 postread = 2
 
-prints = np.zeros([nobs, 4*aln])
-row=0
+lbs = np.zeros([len(heaps), aln*4])
+ubs = np.zeros([len(heaps), aln*4])
 for i in range(len(heaps)):
+    prints = np.zeros([len(addrs[i]), aln*4])
     for j,a in enumerate(addrs[i]):
         base = (a//aln) * aln
-        prints[row,:]  = np.array([x for x in read_heap_bytes(heaps[i], base - mapdicts[i][heapname][0] - preread*aln, (preread + postread)*aln)])
-        row += 1
+        prints[j]  = np.array([x for x in read_heap_bytes(heaps[i], base - mapdicts[i][heapname][0] - preread*aln, (preread + postread)*aln)])
+    lbs[i]  = prints.min(axis=0)
+    ubs[i]  = prints.max(axis=0)
 
-# Record a range of observed values for each byte in the observed range
-lbs = prints.min(axis=0)
-ubs = prints.max(axis=0)
-
-# Test the accuracy of pointer fingerprinting on the test data
-trupos = []
-falsepos = []
+# perform leave-one-out cross-valitation:
 for i in range(len(heaps)):
+
+    print("Cross Validation: Holding out run {}".format(i))
+    # exclude the bounds from the held-out run
+    lb_val = np.delete(lbs, i, axis=0)
+    ub_val = np.delete(ubs, i, axis=0)
+
+    # Widen intervals for positions where bounds vary accross runs
+    lb2 = np.clip(lb_val.min(axis=0) - (lb_val.max(axis=0) - lb_val.min(axis=0)), 0, 255)
+    ub2 = np.clip(ub_val.max(axis=0) + (ub_val.max(axis=0) - ub_val.min(axis=0)), 0, 255)
+
+    # Test the accuracy of pointer fingerprinting on the test data
+    trupos = []
+    falsepos = []
     for offset in range(preread*aln, mapdicts[i][heapname][1] - mapdicts[i][heapname][0] - postread*aln, aln):
         dat = np.array([x for x in read_heap_bytes(heaps[i], offset - preread*aln, (preread + postread)*aln)])
-        if all(lbs <= dat) and all(dat <= ubs):
+        if all(lb2 <= dat) and all(dat <= ub2):
             if mapdicts[i][heapname][0] + offset in addrs[i]:
                 trupos.append(offset)
             else:
                 falsepos.append(offset)
 
-total_addrs = sum([(md[heapname][1] - md[heapname][0])//aln for md in mapdicts])
-total_true = sum([len(a) for a in addrs])
-print("TPR: {}".format(len(trupos)/total_true))
-print("FPR: {}".format(len(falsepos)/(total_addrs - total_true)))
-pickle.dump((lbs, ubs, section, offset), open(args.dir + "classifier.pickle", 'wb'))
+    total_addrs = (mapdicts[i][heapname][1] - mapdicts[i][heapname][0])//aln 
+    total_true = len(addrs[i])
+    print("TPR: {}".format(len(trupos)/total_true))
+    print("FPR: {}".format(len(falsepos)/(total_addrs - total_true)))
+
+# Create and save the master bounds
+lb_final = np.clip(lbs.min(axis=0) - (lbs.max(axis=0) - lbs.min(axis=0)), 0, 255)
+ub_final = np.clip(ubs.max(axis=0) + (ubs.max(axis=0) - ubs.min(axis=0)), 0, 255)
+pickle.dump((lb_final, ub_final, section, offset), open(args.dir + "classifier.pickle", 'wb'))
