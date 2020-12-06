@@ -33,7 +33,7 @@ def build_maplist(pid):
     for seg in mapdict.keys():
         for i,reg in enumerate(mapdict[seg]):
             maplist.append((reg[0], reg[1], seg + "_" + str(i)))
-    print(maplist)
+    # print(maplist)
     return sorted(maplist, key = lambda x: x[0])
 
 

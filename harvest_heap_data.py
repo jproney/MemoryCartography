@@ -17,7 +17,10 @@ parser.add_argument("--heap_region",type=str, default="[heap]", help="name of th
 parser.add_argument("--attach_time",type=int, default=0, help="How long (in seconds) to wait before attaching and analyzing. If 0, await user input")
 parser.add_argument("--region_number",type=int, default=0, help="If there are multiple regions with the specfied name, this index specifies which one to use \
                                                                 (based on the order of the regions in /proc/pid/maps)")
-parser.add_argument("--pgrep",type=str, default="", help="expression to pgrep for and attach to. If none is provided, will just attach to the PID of the spawned subprocess.")
+parser.add_argument("--pgrepattach",type=str, default="", help="expression to pgrep for and attach to. If none is provided, will just attach to the PID of the spawned subprocess.")
+parser.add_argument("--pgrepkill",type=str, default="", help="expression to pgrep when killing processes.")
+parser.add_argument("--killsig",type=int, default=9, help="Signal number to send for killing processes. Defu")
+
 args = parser.parse_args()
 
 os.makedirs(args.outdir, exist_ok=True)
@@ -28,12 +31,17 @@ for i in range(args.num_repeats):
     else:
         time.sleep(args.attach_time)
     
-    if len(args.pgrep) > 0:
-        proc = subprocess.Popen(['pgrep', args.pgrep], stdout=subprocess.PIPE)
+    if len(args.pgrepattach) > 0:
+        proc = subprocess.Popen(['pgrep', args.pgrepattach], stdout=subprocess.PIPE)
         pid = int(proc.stdout.read().decode().split("\n")[0])
     else:
         pid = child.pid
 
     # dump the memory
     os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, [\"{}_{}\"], True, \"{}\")'".format(pid, args.heap_region, args.region_number, args.outdir + "/run{}_".format(i)))
-    os.system("kill -9 {}".format(pid))
+    
+    # determine who to kill
+    if len(args.pgrepkill) > 0:
+        os.system("pkill -{} '{}'".format(args.killsig, args.pgrepkill))    
+    else:
+        os.system("kill -{} {}".format(args.killsig, pid))    
