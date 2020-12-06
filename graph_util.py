@@ -37,4 +37,56 @@ def shortest_path(graph, start, end):
                 nodeq.appendleft(nxt)
     
     return None
-        
+
+"""
+Find strongly connected components in the memory graph
+graph is a double-dictionary
+"""
+def find_scc(graph):
+    grev = {} #reverse graph
+    for u in graph.keys():
+        for v in graph.keys():
+            if v not in grev:
+                grev[v] = {}
+            grev[v][u] = graph[u][v]
+
+    scc_memership = {} # To which number SCC does each node belong?
+    sccs = []
+    scc_edgelist = []
+
+    visited = set([])
+    preo = []
+    posto = [] 
+
+    def dfs(g, source):
+        visited.add(source)
+        preo.append(source)
+        for nxt in g.keys():
+            if len(g[source][nxt]) > 0 and nxt not in visited:
+                visited.add(nxt)
+                dfs(g, nxt)
+            if len(g[source][nxt]) > 0 and nxt in scc_memership: # for tracing scc edges during 2nd pass
+                scc_edgelist[-1].add(scc_memership[nxt]) 
+        posto.append(source)
+
+    for src in grev.keys():
+        if src not in visited:
+            dfs(grev, src)
+    
+    visited = set([])
+    sinks = [x for x in posto[::-1]]
+    preo = []
+    posto = []
+
+    # get the sccs
+    for src in sinks:
+        if src not in visited:
+            scc_edgelist.append(set([]))
+            dfs(graph, src)
+            for node in preo:
+                scc_memership[node] = len(sccs)
+            sccs.append(preo)
+            preo = [] #comandeer preo to keep track of new additions
+
+    return sccs, scc_edgelist
+

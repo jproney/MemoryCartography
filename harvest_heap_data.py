@@ -1,5 +1,6 @@
 """
 Run the heap analysis code!
+Example: python harvest_heap_data.py 'gnome-terminal -- vim' --pgrep vim
 """
 
 import argparse
