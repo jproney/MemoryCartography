@@ -7,6 +7,7 @@ import re
 
 parser = argparse.ArgumentParser()
 parser.add_argument("dir", help="output directory to analyze (created by runing harvest_heap_data.py)")
+parser.add_argument("--rank", type=int, default=0, help="An integer representing the index of the pointer to target, with 0 representing the most frequent.")
 args = parser.parse_args()
 
 dumpfiles = sorted([args.dir + f for f in os.listdir(args.dir) if f.endswith(".dump")])
@@ -56,8 +57,8 @@ pointerlist = sorted(pointerdict.items(), key=lambda item: item[1], reverse=True
 
 # Starting with the most frequent, look for "fingerprints" surrounding the pointers
 
-(section, offset), nobs = pointerlist[0]
-addrs = [sorted([md[heapname][0] + edge[0] for edge in mg[heapname][section] if edge[1] == offset]) for md,mg in zip(mapdicts, memgraphs)]
+(section, dst_offset), nobs = pointerlist[args.rank]
+addrs = [sorted([md[heapname][0] + edge[0] for edge in mg[heapname][section] if edge[1] == dst_offset]) for md,mg in zip(mapdicts, memgraphs)]
 
 # Find the minimum distance between any two pointers of interest 
 mindist = min([min([addrs[i][j+1] - addrs[i][j] for j in range(0, len(addrs[i])-1)]) for i in range(len(addrs))])
@@ -106,10 +107,10 @@ for i in range(len(heaps)):
 
     total_addrs = (mapdicts[i][heapname][1] - mapdicts[i][heapname][0])//aln 
     total_true = len(addrs[i])
-    print("TPR: {}".format(len(trupos)/total_true))
-    print("FPR: {}".format(len(falsepos)/(total_addrs - total_true)))
+    print("TPR: {} ({}/{})".format(len(trupos)/total_true, len(trupos), total_true))
+    print("FPR: {} ({}/{})".format(len(falsepos)/(total_addrs - total_true), len(falsepos), total_addrs - total_true))
 
 # Create and save the master bounds
 lb_final = np.clip(lbs.min(axis=0) - (lbs.max(axis=0) - lbs.min(axis=0)), 0, 255)
 ub_final = np.clip(ubs.max(axis=0) + (ubs.max(axis=0) - ubs.min(axis=0)), 0, 255)
-pickle.dump((lb_final, ub_final, section, offset), open(args.dir + "classifier.pickle", 'wb'))
+pickle.dump((lb_final, ub_final, section, dst_offset), open(args.dir + "classifier_{}_{}.pickle".format(section.split("/")[-1], dst_offset), 'wb'))
