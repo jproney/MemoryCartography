@@ -87,16 +87,54 @@ def build_graph(maplist, sources=None, fulldump=False, dumpname=""): #sources = 
                 memgraph[region[2]][dstseg].append((addr - region[0], offset))
     return memgraph
 
+
+def dump_mem(maplist, sources=None, dumpname=""):
+    sourcelist = [x for x in maplist if x[2] in sources] if sources else maplist
+
+    for i,region in enumerate(sourcelist):
+        print("Dumping " + str(region) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(region[1] - region[0]))
+        gdb.execute("dump memory {}.dump {} {}".format(dumpname + region[2], region[0], region[1]))
+
+def build_graph_from_dumps(maplist, sources=None, dumpname=""):
+    memgraph = {} #adjacency matrix, where entry [i][j] is a list of (src_offset, dst_offset) links between regions i and j
+    sourcelist = [x for x in maplist if x[2] in sources] if sources else maplist
+    for  _, _, name_i in sourcelist:
+        memgraph[name_i] = {}
+        for _,_, name_j in maplist:
+            memgraph[name_i][name_j] = [] 
+
+    for i,region in enumerate(sourcelist):
+        # Same deal as using gdb, just read from dumps instead
+        print("Scanning " + str(region) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(region[1] - region[0]))
+        with open("{}.dump".format(dumpname + region[2]), "rb") as f:
+            addr = region[0]
+            raw_mem = f.read(8)
+
+            while raw_mem:
+                val = int.from_bytes(raw_mem, "big")
+
+                dst = check_pointer(val, maplist)
+
+                if dst:
+                    offset, dstseg = dst
+                    memgraph[region[2]][dstseg].append((addr - region[0], offset))
+
+                raw_mem = f.read(8)
+                addr += 8
+
+    return memgraph
+
+
 """
 Run the full script and save the memory graph
 """
-def gdb_main(pid, sources=None, dump=False, name=""):
+def gdb_main(pid, sources=None, dump=False, name="", online=True):
     maplist = build_maplist(pid)
-    try:
+    if online:
         memgraph = build_graph(maplist, sources, dump, name)
-    except Exception as e:
-        print(e)
-        print("exception caught")
+    else:
+        dump_mem(maplist, sources, name)
+        memgraph = build_graph_from_dumps(maplist, sources, name)
     with open(name + "memgraph.pickle", "wb") as f:
         pickle.dump(memgraph, f)
     with open(name + "maplist.pickle", "wb") as f2:

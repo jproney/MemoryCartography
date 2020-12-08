@@ -12,6 +12,12 @@ args = parser.parse_args()
 
 dumpfiles = sorted([args.dir + f for f in os.listdir(args.dir) if f.endswith(".dump")])
 heaps = [open(df, "rb") for df in dumpfiles]
+# for df in dumpfiles:
+#     run, heapname, num = df.split("_")
+#     if not heaps["{}_{}".format(heapname, num)]:
+#         heaps["{}_{}".format(heapname, num)] = []
+
+#     heaps["{}_{}".format(heapname, num)].append(open(df, "rb"))
 
 graphfiles = sorted([args.dir + f for f in os.listdir(args.dir) if f.endswith("memgraph.pickle")])
 memgraphs = [pickle.load(open(gf, "rb")) for gf in graphfiles]

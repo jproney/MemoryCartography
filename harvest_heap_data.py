@@ -24,11 +24,14 @@ parser.add_argument("--pgrepattach",type=str, default="", help="expression to pg
 parser.add_argument("--pgrepkill",type=str, default="", help="expression to pgrep when killing processes. If not specified, kills process found with pgrep")
 parser.add_argument("--killsig",type=int, default=9, help="Signal number to send for killing processes. Defaults to KILL")
 
+parser.add_argument("--online", dest='online', action='store_true', help="Whether to read pointers from memory in GDB, or to dump memory using GDB and read from the dumps")
+parser.add_argument("--offline", dest='online', action='store_false', help="Whether to read pointers from memory in GDB, or to dump memory using GDB and read from the dumps")
+
 args = parser.parse_args()
 
 os.makedirs(args.outdir, exist_ok=True)
 for i in range(args.num_repeats):
-    child = subprocess.Popen(args.cmd.split(" ") + ["&"])
+    child = subprocess.Popen(args.cmd.split(" "))
     if args.attach_time == 0:
         input("Press any key to pause and analyze memory...")
     else:
@@ -47,8 +50,10 @@ for i in range(args.num_repeats):
 
     print(list_string)
 
+    print(args.online)
+
     # dump the memory
-    os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, {}, True, \"{}\")'".format(pid, list_string, args.outdir + "/run{}_".format(i)))
+    os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, {}, True, \"{}\", {})'".format(pid, list_string, args.outdir + "/run{}_".format(i), args.online))
     
     # determine who to kill
     if len(args.pgrepkill) > 0:
