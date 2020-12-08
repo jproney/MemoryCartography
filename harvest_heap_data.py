@@ -27,6 +27,9 @@ parser.add_argument("--killsig",type=int, default=9, help="Signal number to send
 parser.add_argument("--online", dest='online', action='store_true', help="Whether to read pointers from memory in GDB, or to dump memory using GDB and read from the dumps")
 parser.add_argument("--offline", dest='online', action='store_false', help="Whether to read pointers from memory in GDB, or to dump memory using GDB and read from the dumps")
 
+parser.add_argument("--orderby",type=int, default=0, help="0 to index by process order in /proc/maps, 1 to order descending by segment size")
+
+
 args = parser.parse_args()
 
 os.makedirs(args.outdir, exist_ok=True)
@@ -53,7 +56,14 @@ for i in range(args.num_repeats):
     print(args.online)
 
     # dump the memory
-    os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, {}, True, \"{}\", {})'".format(pid, list_string, args.outdir + "/run{}_".format(i), args.online))
+    os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, {}, True, \"{}\", {}, {})'" \
+        .format(
+            pid, 
+            list_string, 
+            "{}/run{}_".format(args.outdir, i), 
+            args.online,
+            args.orderby
+            ))
     
     # determine who to kill
     if len(args.pgrepkill) > 0:

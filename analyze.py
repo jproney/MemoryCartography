@@ -8,23 +8,19 @@ import re
 parser = argparse.ArgumentParser()
 parser.add_argument("dir", help="output directory to analyze (created by runing harvest_heap_data.py)")
 parser.add_argument("--rank", type=int, default=0, help="An integer representing the index of the pointer to target, with 0 representing the most frequent.")
+parser.add_argument("--heap_idx", type=int, default=0, help="An integer representing the index of the heap we are interested in, in descending order of size.")
 args = parser.parse_args()
 
-dumpfiles = sorted([args.dir + f for f in os.listdir(args.dir) if f.endswith(".dump")])
+# Filter out only heap_idx
+dumpfiles = sorted([args.dir + f for f in os.listdir(args.dir) if f.endswith("{}.dump".format(args.heap_idx))])
 heaps = [open(df, "rb") for df in dumpfiles]
-# for df in dumpfiles:
-#     run, heapname, num = df.split("_")
-#     if not heaps["{}_{}".format(heapname, num)]:
-#         heaps["{}_{}".format(heapname, num)] = []
 
-#     heaps["{}_{}".format(heapname, num)].append(open(df, "rb"))
 
 graphfiles = sorted([args.dir + f for f in os.listdir(args.dir) if f.endswith("memgraph.pickle")])
 memgraphs = [pickle.load(open(gf, "rb")) for gf in graphfiles]
 
 mapfiles = sorted([args.dir + f for f in os.listdir(args.dir) if f.endswith("maplist.pickle")])
 maplists = [pickle.load(open(mf, "rb")) for mf in mapfiles]
-
 
 
 def read_heap_bytes(heapfile, offset, nbytes):
@@ -38,8 +34,6 @@ def read_heap_pointer(heapfile, offset):
 def read_heap_int(heapfile, offset):
     heapfile.seek(offset)
     return struct.unpack('<i', heapfile.read(4))
-
-# print(dumpfiles[0].split("_")[-2:])
 
 heapname = "_".join(dumpfiles[0].split("_")[-2:])[:-5]
 
@@ -60,16 +54,20 @@ for i in range(len(heaps)):
                 pointerdict[(dst, ptr[1])] += 1
             else:
                 pointerdict[(dst, ptr[1])] = 1
-        
+          
+
 pointerlist = sorted(pointerdict.items(), key=lambda item: item[1], reverse=True)
 
 # Starting with the most frequent, look for "fingerprints" surrounding the pointers
 
 (section, dst_offset), nobs = pointerlist[args.rank]
+
+# Addrs is list of lists of pointers found in each run
 addrs = [sorted([md[heapname][0] + edge[0] for edge in mg[heapname][section] if edge[1] == dst_offset]) for md,mg in zip(mapdicts, memgraphs)]
 
 # Find the minimum distance between any two pointers of interest 
-mindist = min([min([addrs[i][j+1] - addrs[i][j] for j in range(0, len(addrs[i])-1)]) for i in range(len(addrs))])
+# Ignores when addrs[i] is of length 0
+mindist = min([min([addrs[i][j+1] - addrs[i][j] for j in range(0, len(addrs[i])-1)]) for i in range(len(addrs)) if len(addrs[i]) > 0] )
 
 # Assume pointers live in a struct and determine its alignment
 aln = 8
@@ -80,6 +78,7 @@ while all([a%(aln*2) == addrs[0][0]%(aln*2) for run in addrs for a in run]) and 
 preread = 2
 postread = 2
 
+# Find lower and upper bounds
 lbs = np.zeros([len(heaps), aln*4])
 ubs = np.zeros([len(heaps), aln*4])
 for i in range(len(heaps)):
@@ -87,8 +86,14 @@ for i in range(len(heaps)):
     for j,a in enumerate(addrs[i]):
         base = (a//aln) * aln
         prints[j]  = np.array([x for x in read_heap_bytes(heaps[i], base - mapdicts[i][heapname][0] - preread*aln, (preread + postread)*aln)])
+    np.set_printoptions(threshold=np.inf)
+
     lbs[i]  = prints.min(axis=0)
     ubs[i]  = prints.max(axis=0)
+
+print(lbs)
+print(ubs)
+
 
 # perform leave-one-out cross-valitation:
 for i in range(len(heaps)):

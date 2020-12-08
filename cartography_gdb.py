@@ -11,7 +11,7 @@ import pickle
 """
 Construct list of contiguous mapped regions, their offsets, and their names
 """
-def build_maplist(pid):
+def build_maplist(pid, orderby):
     gdb.execute("attach " + str(pid))
 
     # At breakpoint. Get the addresses of all of the mapped memory regions
@@ -31,8 +31,19 @@ def build_maplist(pid):
         
     maplist=[] #flat version of mapped memory reigons. List of tuples of form (start, end, name)
     for seg in mapdict.keys():
-        for i,reg in enumerate(mapdict[seg]):
+        mapdict_byseg = mapdict[seg]
+
+        # Order this by orderby arg
+        if orderby == 0:
+            # Order by address (ie, order in /proc/maps)
+            pass
+        elif orderby == 1:
+            # Order by size, descending
+            mapdict_byseg.sort(key=lambda reg: reg[1] - reg[0], reverse=True)
+
+        for i,reg in enumerate(mapdict_byseg):
             maplist.append((reg[0], reg[1], seg + "_" + str(i)))
+
     print(maplist)
     return sorted(maplist, key = lambda x: x[0])
 
@@ -111,8 +122,7 @@ def build_graph_from_dumps(maplist, sources=None, dumpname=""):
             raw_mem = f.read(8)
 
             while raw_mem:
-                val = int.from_bytes(raw_mem, "big")
-
+                val = int.from_bytes(raw_mem, "little")
                 dst = check_pointer(val, maplist)
 
                 if dst:
@@ -128,8 +138,8 @@ def build_graph_from_dumps(maplist, sources=None, dumpname=""):
 """
 Run the full script and save the memory graph
 """
-def gdb_main(pid, sources=None, dump=False, name="", online=True):
-    maplist = build_maplist(pid)
+def gdb_main(pid, sources=None, dump=False, name="", online=True, orderby=0):
+    maplist = build_maplist(pid, orderby)
     if online:
         memgraph = build_graph(maplist, sources, dump, name)
     else:
