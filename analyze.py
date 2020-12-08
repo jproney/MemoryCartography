@@ -33,6 +33,8 @@ def read_heap_int(heapfile, offset):
     heapfile.seek(offset)
     return struct.unpack('<i', heapfile.read(4))
 
+# print(dumpfiles[0].split("_")[-2:])
+
 heapname = "_".join(dumpfiles[0].split("_")[-2:])[:-5]
 
 pointerdict = {}

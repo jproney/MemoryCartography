@@ -33,7 +33,7 @@ def build_maplist(pid):
     for seg in mapdict.keys():
         for i,reg in enumerate(mapdict[seg]):
             maplist.append((reg[0], reg[1], seg + "_" + str(i)))
-    # print(maplist)
+    print(maplist)
     return sorted(maplist, key = lambda x: x[0])
 
 
@@ -67,6 +67,8 @@ def build_graph(maplist, sources=None, fulldump=False, dumpname=""): #sources = 
         for _,_, name_j in maplist:
             memgraph[name_i][name_j] = [] 
 
+    print(sourcelist)
+
     for i,region in enumerate(sourcelist):
         print("Scanning " + str(region) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(region[1] - region[0]))
         if fulldump:
@@ -80,6 +82,7 @@ def build_graph(maplist, sources=None, fulldump=False, dumpname=""): #sources = 
                 continue
             dst = check_pointer(val, maplist)
             if dst:
+                # print(dst)
                 offset, dstseg = dst
                 memgraph[region[2]][dstseg].append((addr - region[0], offset))
     return memgraph
@@ -89,7 +92,11 @@ Run the full script and save the memory graph
 """
 def gdb_main(pid, sources=None, dump=False, name=""):
     maplist = build_maplist(pid)
-    memgraph = build_graph(maplist, sources, dump, name)
+    try:
+        memgraph = build_graph(maplist, sources, dump, name)
+    except Exception as e:
+        print(e)
+        print("exception caught")
     with open(name + "memgraph.pickle", "wb") as f:
         pickle.dump(memgraph, f)
     with open(name + "maplist.pickle", "wb") as f2:
