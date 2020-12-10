@@ -24,10 +24,7 @@ def build_maplist(pid, orderby):
         if segname not in mapdict:
             mapdict[segname] = [(int(segment[0],16), int(segment[1],16))]
         else:
-            if int(segment[0], 16) == mapdict[segname][-1][1]: #comibine adjascent memory ranges into one range
-                mapdict[segname][-1] = (mapdict[segname][-1][0], int(segment[1], 16))
-            else:
-                mapdict[segname].append((int(segment[0],16), int(segment[1],16)))
+            mapdict[segname].append((int(segment[0],16), int(segment[1],16)))
         
     maplist=[] #flat version of mapped memory reigons. List of tuples of form (start, end, name)
     for seg in mapdict.keys():
@@ -70,9 +67,11 @@ def check_pointer(addr, maplist):
 """
 Build the Memory Cartography graph
 """
-def build_graph(maplist, sources=None, fulldump=False, dumpname=""): #sources = list of source ranges to scan, if None, scan everything, fulldump = dump all of the source regions
+def build_graph(maplist, sources=None, length_lb = -1, length_ub = 2**32, fulldump=False, dumpname=""): #sources = list of source ranges to scan, if None, scan everything, fulldump = dump all of the source regions
     memgraph = {} #adjacency matrix, where entry [i][j] is a list of (src_offset, dst_offset) links between regions i and j
-    sourcelist = [x for x in maplist if x[2] in sources] if sources else maplist
+    sourcelist = [x for x in maplist if x[2].split("_")[0] in sources and length_lb <= x[1] - x[0]
+                                                        and length_ub >= x[1] - x[0]] if sources else maplist
+
     for  _, _, name_i in sourcelist:
         memgraph[name_i] = {}
         for _,_, name_j in maplist:
@@ -99,16 +98,17 @@ def build_graph(maplist, sources=None, fulldump=False, dumpname=""): #sources = 
     return memgraph
 
 
-def dump_mem(maplist, sources=None, dumpname=""):
-    sourcelist = [x for x in maplist if x[2] in sources] if sources else maplist
-
+def dump_mem(maplist, sources=None,  length_lb = -1, length_ub = 2**32, dumpname=""):
+    sourcelist = [x for x in maplist if x[2].split("_")[0] in sources and length_lb <= x[1] - x[0]
+                                                        and length_ub >= x[1] - x[0]] if sources else maplist
     for i,region in enumerate(sourcelist):
         print("Dumping " + str(region) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(region[1] - region[0]))
         gdb.execute("dump memory {}.dump {} {}".format(dumpname + region[2], region[0], region[1]))
 
-def build_graph_from_dumps(maplist, sources=None, dumpname=""):
+def build_graph_from_dumps(maplist, sources=None,  length_lb = -1, length_ub = 2**32, dumpname=""):
     memgraph = {} #adjacency matrix, where entry [i][j] is a list of (src_offset, dst_offset) links between regions i and j
-    sourcelist = [x for x in maplist if x[2] in sources] if sources else maplist
+    sourcelist = [x for x in maplist if x[2].split("_")[0] in sources and length_lb <= x[1] - x[0]
+                                                        and length_ub >= x[1] - x[0]] if sources else maplist
     for  _, _, name_i in sourcelist:
         memgraph[name_i] = {}
         for _,_, name_j in maplist:
@@ -138,13 +138,13 @@ def build_graph_from_dumps(maplist, sources=None, dumpname=""):
 """
 Run the full script and save the memory graph
 """
-def gdb_main(pid, sources=None, dump=False, name="", online=True, orderby=0):
+def gdb_main(pid, sources=None, llb = -1, lub=2**64, dump=False, name="", online=True, orderby=0):
     maplist = build_maplist(pid, orderby)
     if online:
-        memgraph = build_graph(maplist, sources, dump, name)
+        memgraph = build_graph(maplist, sources, llb, lub, dump, name)
     else:
-        dump_mem(maplist, sources, name)
-        memgraph = build_graph_from_dumps(maplist, sources, name)
+        dump_mem(maplist, sources, llb, lub, name)
+        memgraph = build_graph_from_dumps(maplist, sources, llb, lub, name)
     with open(name + "memgraph.pickle", "wb") as f:
         pickle.dump(memgraph, f)
     with open(name + "maplist.pickle", "wb") as f2:
