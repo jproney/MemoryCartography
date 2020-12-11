@@ -108,6 +108,10 @@ for i in range(len(heaps)):
 
 
 # perform leave-one-out cross-validation:
+grand_total_true = 0
+grand_total = 0
+grand_tp = 0
+grand_fp =0
 for i in range(len(heaps)):
 
     print("Cross Validation: Holding out run {}".format(i))
@@ -138,8 +142,15 @@ for i in range(len(heaps)):
         total_true += len(addrs[i][j])
     print("TPR: {} ({}/{})".format(len(trupos)/total_true, len(trupos), total_true))
     print("FPR: {} ({}/{})".format(len(falsepos)/(total_addrs - total_true), len(falsepos), total_addrs - total_true))
-
+    grand_total += total_addrs
+    grand_total_true += total_true
+    grand_tp += len(trupos)
+    grand_fp += len(falsepos)
 # Create and save the master bounds
 lb_final = np.clip(lbs.min(axis=0) - (lbs.max(axis=0) - lbs.min(axis=0)), 0, 255)
 ub_final = np.clip(ubs.max(axis=0) + (ubs.max(axis=0) - ubs.min(axis=0)), 0, 255)
 pickle.dump((lb_final, ub_final, section, dst_offset, aln, aln_offset), open(args.dir + "classifier_{}_{}.pickle".format(section.split("/")[-1], dst_offset), 'wb'))
+print("TOTAL TPR: {} ({}/{})".format(grand_tp/grand_total_true, grand_tp, grand_total_true))
+print("TOTAL FPR: {} ({}/{})".format(grand_fp/(grand_total - grand_total_true), grand_fp, grand_total - grand_total_true))
+print(section)
+print(dst_offset)
