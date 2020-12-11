@@ -112,6 +112,7 @@ grand_total_true = 0
 grand_total = 0
 grand_tp = 0
 grand_fp =0
+minpres = []
 for i in range(len(heaps)):
 
     print("Cross Validation: Holding out run {}".format(i))
@@ -129,17 +130,27 @@ for i in range(len(heaps)):
     falsepos = []
     total_addrs = 0
     total_true = 0
+    local_pres = []
     for j,heapname in enumerate(heapnames[i]):
+        local_tp = []
+        local_fp = []
         for offset in range(math.ceil(preread/aln)*aln + aln_offset, mapdicts[i][heapname][1] - mapdicts[i][heapname][0] - postread, aln):
             dat = np.array([x for x in read_heap_bytes(heaps[i][j], offset - preread, (preread + postread))])
             if all(lb2 <= dat) and all(dat <= ub2):
                 if mapdicts[i][heapname][0] + offset in addrs[i][j]:
                     trupos.append((j,offset))
+                    local_tp.append(offset)
                 else:
                     falsepos.append((j,offset))
-
+                    local_fp.append(offset)
+        print("HEAP {}: TPS: {}/{} FPS: {}/{}".format(j, len(local_tp), len(addrs[i][j]), len(local_fp), (mapdicts[i][heapname][1] - mapdicts[i][heapname][0])//aln - len(addrs[i][j])))
+        if (len(local_tp) + len(local_fp)) > 0:
+            local_pres.append(len(local_tp)/(len(local_tp) + len(local_fp)))
+        else:
+            local_pres.append(0)
         total_addrs += (mapdicts[i][heapname][1] - mapdicts[i][heapname][0])//aln 
         total_true += len(addrs[i][j])
+    minpres.append(min(local_pres))
     print("TPR: {} ({}/{})".format(len(trupos)/total_true, len(trupos), total_true))
     print("FPR: {} ({}/{})".format(len(falsepos)/(total_addrs - total_true), len(falsepos), total_addrs - total_true))
     grand_total += total_addrs
@@ -154,3 +165,5 @@ print("TOTAL TPR: {} ({}/{})".format(grand_tp/grand_total_true, grand_tp, grand_
 print("TOTAL FPR: {} ({}/{})".format(grand_fp/(grand_total - grand_total_true), grand_fp, grand_total - grand_total_true))
 print(section)
 print(dst_offset)
+print(minpres)
+print(sum(minpres)/len(minpres))

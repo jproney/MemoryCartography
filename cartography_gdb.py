@@ -7,6 +7,7 @@ gdb -x cartography_gdb.py -ex 'py gdb_main(5201, ["[heap]_0"], True)'
 import gdb #won't work unless script is being run under a GDB process
 import re
 import pickle
+import os
 
 """
 Construct list of contiguous mapped regions, their offsets, and their names
@@ -67,10 +68,10 @@ def check_pointer(addr, maplist):
 """
 Build the Memory Cartography graph
 """
-def build_graph(maplist, sources=None, length_lb = -1, length_ub = 2**32, fulldump=False, dumpname=""): #sources = list of source ranges to scan, if None, scan everything, fulldump = dump all of the source regions
+def build_graph(maplist, sources=None, length_lb = -1, length_ub = 2**30, fulldump=False, dumpname=""): #sources = list of source ranges to scan, if None, scan everything, fulldump = dump all of the source regions
     memgraph = {} #adjacency matrix, where entry [i][j] is a list of (src_offset, dst_offset) links between regions i and j
-    sourcelist = [x for x in maplist if x[2].split("_")[0] in sources and length_lb <= x[1] - x[0]
-                                                        and length_ub >= x[1] - x[0]] if sources else maplist
+    sourcelist = [x for x in maplist if x[2].split("_")[0] in sources] if sources else maplist
+    sourcelist = [x for x in sourcelist if length_lb <= x[1] - x[0] and length_ub >= x[1] - x[0]]
 
     for  _, _, name_i in sourcelist:
         memgraph[name_i] = {}
@@ -98,17 +99,24 @@ def build_graph(maplist, sources=None, length_lb = -1, length_ub = 2**32, fulldu
     return memgraph
 
 
-def dump_mem(maplist, sources=None,  length_lb = -1, length_ub = 2**32, dumpname=""):
-    sourcelist = [x for x in maplist if x[2].split("_")[0] in sources and length_lb <= x[1] - x[0]
-                                                        and length_ub >= x[1] - x[0]] if sources else maplist
+def dump_mem(maplist, sources=None,  length_lb = -1, length_ub = 2**30, dumpname=""):
+    sourcelist = [x for x in maplist if x[2].split("_")[0] in sources] if sources else maplist
+    sourcelist = [x for x in sourcelist if length_lb <= x[1] - x[0] and length_ub >= x[1] - x[0]]
+
     for i,region in enumerate(sourcelist):
         print("Dumping " + str(region) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(region[1] - region[0]))
-        gdb.execute("dump memory {}.dump {} {}".format(dumpname + region[2], region[0], region[1]))
+        print("dump memory {}.dump {} {}".format(dumpname + region[2].split("/")[-1], region[0], region[1]))
+        try:
+            gdb.execute("dump memory {}.dump {} {}".format(dumpname + region[2].split("/")[-1], region[0], region[1]))
+        except:
+            continue
+        print("finished dump")
 
-def build_graph_from_dumps(maplist, sources=None,  length_lb = -1, length_ub = 2**32, dumpname=""):
+def build_graph_from_dumps(maplist, sources=None,  length_lb = -1, length_ub = 2**30, dumpname=""):
     memgraph = {} #adjacency matrix, where entry [i][j] is a list of (src_offset, dst_offset) links between regions i and j
-    sourcelist = [x for x in maplist if x[2].split("_")[0] in sources and length_lb <= x[1] - x[0]
-                                                        and length_ub >= x[1] - x[0]] if sources else maplist
+    sourcelist = [x for x in maplist if x[2].split("_")[0] in sources] if sources else maplist
+    sourcelist = [x for x in sourcelist if length_lb <= x[1] - x[0] and length_ub >= x[1] - x[0]]
+    
     for  _, _, name_i in sourcelist:
         memgraph[name_i] = {}
         for _,_, name_j in maplist:
@@ -117,20 +125,22 @@ def build_graph_from_dumps(maplist, sources=None,  length_lb = -1, length_ub = 2
     for i,region in enumerate(sourcelist):
         # Same deal as using gdb, just read from dumps instead
         print("Scanning " + str(region) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(region[1] - region[0]))
-        with open("{}.dump".format(dumpname + region[2]), "rb") as f:
-            addr = region[0]
-            raw_mem = f.read(8)
 
-            while raw_mem:
-                val = int.from_bytes(raw_mem, "little")
-                dst = check_pointer(val, maplist)
-
-                if dst:
-                    offset, dstseg = dst
-                    memgraph[region[2]][dstseg].append((addr - region[0], offset))
-
+        if os.path.exists("{}.dump".format(dumpname + region[2].split("/")[-1])):
+            with open("{}.dump".format(dumpname + region[2].split("/")[-1]), "rb") as f:
+                addr = region[0]
                 raw_mem = f.read(8)
-                addr += 8
+
+                while raw_mem:
+                    val = int.from_bytes(raw_mem, "little")
+                    dst = check_pointer(val, maplist)
+
+                    if dst:
+                        offset, dstseg = dst
+                        memgraph[region[2]][dstseg].append((addr - region[0], offset))
+
+                    raw_mem = f.read(8)
+                    addr += 8
 
     return memgraph
 
@@ -138,7 +148,7 @@ def build_graph_from_dumps(maplist, sources=None,  length_lb = -1, length_ub = 2
 """
 Run the full script and save the memory graph
 """
-def gdb_main(pid, sources=None, llb = -1, lub=2**64, dump=False, name="", online=True, orderby=0):
+def gdb_main(pid, sources=None, llb = -1, lub=2**30, dump=False, name="", online=True, orderby=0):
     maplist = build_maplist(pid, orderby)
     if online:
         memgraph = build_graph(maplist, sources, llb, lub, dump, name)
