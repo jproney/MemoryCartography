@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+  </head>
+
+<body>
+  <button id="make-monsters">Make monsters!</button>
+  <script>
+
+    var BIG_NUM = 10000000;
+
+    window.big_array = Float32Array(BIG_NUM);
+    for (var i = 0; i < BIG_NUM; i++) {
+      window.big_array[i] = i / 10.;
+    }
+
+    var makeMonstersButton = document.getElementById("make-monsters");
+  </script>
+
+
+
+
+</body></html>
