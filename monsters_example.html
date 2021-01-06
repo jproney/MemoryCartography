@@ -7,41 +7,43 @@
 <body>
   <button id="make-monsters">Make monsters!</button>
   <script>
-    var MONSTER_COUNT = 5000;
-    var MIN_NAME_LENGTH = 500;
-    var MAX_NAME_LENGTH = 500;
+    var MONSTER_COUNT = 1;
+    var MIN_NAME_LENGTH = 50000000;
+    var MAX_NAME_LENGTH = 50000000;
 
-    function Monster() {
+    // function Monster() {
 
-      function randomInt(min, max) {
-          return Math.floor(Math.random() * (max - min + 1)) + min;
-        }
+    //   function randomInt(min, max) {
+    //       return Math.floor(Math.random() * (max - min + 1)) + min;
+    //     }
 
-      function randomName() {
-        var chars = "abcdefghijklmnopqrstuvwxyz";
-        var nameLength = randomInt(MIN_NAME_LENGTH, MAX_NAME_LENGTH);
-        var name = "";
-        for (var j = 0; j &lt; nameLength; j++) {
-          name += chars[randomInt(0, chars.length-1)];
-        }
-        return name;
-      }
+    //   function randomName() {
+    //     var chars = "abcdefghijklmnopqrstuvwxyz";
+    //     var nameLength = randomInt(MIN_NAME_LENGTH, MAX_NAME_LENGTH);
+    //     var name = "";
+    //     for (var j = 0; j &lt; nameLength; j++) {
+    //       name += chars[randomInt(0, chars.length-1)];
+    //     }
+    //     return name;
+    //   }
 
-      this.name = randomName();
-      this.eyeCount = randomInt(0, 25);
-      this.tentacleCount = randomInt(0, 250);
-    }
+    //   this.name = randomName();
+    //   this.eyeCount = randomInt(0, 25);
+    //   this.tentacleCount = randomInt(0, 250);
+    // }
 
     function makeMonsters() {
-      var monsters = {
-        "friendly": [],
-        "fierce": [],
-        "undecided": []
-      };
 
-      for (var i = 0; i &lt; MONSTER_COUNT; i++) {
-        monsters.friendly.push(new Monster());
-      }
+
+    //   var monsters = {
+    //     "friendly": [],
+    //     "fierce": [],
+    //     "undecided": []
+    //   };
+
+    //   for (var i = 0; i &lt; MONSTER_COUNT; i++) {
+    //     monsters.friendly.push(new Monster());
+    //   }
 
       // for (var i = 0; i &lt; MONSTER_COUNT; i++) {
       //   monsters.fierce.push(new Monster());
@@ -51,8 +53,19 @@
       //   monsters.undecided.push(new Monster());
       // }
 
-      console.log(monsters);
     }
+
+    var BEEG = 10000000;
+
+    window.beeg_array = new Float32Array(BEEG);
+
+
+    for (var i = 0; i < BEEG; i++) {
+      beeg_array[i] = i / 100;
+    }
+
+    console.log("BEEG");
+
 
     var makeMonstersButton = document.getElementById("make-monsters");
     makeMonstersButton.addEventListener("click", makeMonsters);

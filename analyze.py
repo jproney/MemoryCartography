@@ -86,13 +86,9 @@ for i in range(len(heaps)):
     for j,a in enumerate(addrs[i]):
         base = (a//aln) * aln
         prints[j]  = np.array([x for x in read_heap_bytes(heaps[i], base - mapdicts[i][heapname][0] - preread*aln, (preread + postread)*aln)])
-    np.set_printoptions(threshold=np.inf)
 
     lbs[i]  = prints.min(axis=0)
     ubs[i]  = prints.max(axis=0)
-
-print(lbs)
-print(ubs)
 
 
 # perform leave-one-out cross-valitation:

@@ -20,7 +20,8 @@ parser.add_argument("--attach_time",type=int, default=0, help="How long (in seco
 parser.add_argument("--heap_range",  type=str, default="0,0", help='Value like (2,10). If there are multiple regions with the specified name, we will analyze any' \
                                                 'between 2 and 10 for example, following their order in /proc/./maps',)
 
-parser.add_argument("--pgrepattach",type=str, default="", help="expression to pgrep for and attach to. If none is provided, will just attach to the PID of the spawned subprocess.")
+parser.add_argument("--pgrepattach",type=str, default="", help="expression to pgrep for and attach to. If none is provided, will just attach to the PID of the spawned subprocess. Also allows for arbitrary command lines.")
+parser.add_argument("--pgrepuser",type=str, default="", help="owner of the sought process (ie, www-data for apache handlers)")
 parser.add_argument("--pgrepkill",type=str, default="", help="expression to pgrep when killing processes. If not specified, kills process found with pgrep")
 parser.add_argument("--killsig",type=int, default=9, help="Signal number to send for killing processes. Defaults to KILL")
 
@@ -34,16 +35,28 @@ args = parser.parse_args()
 
 os.makedirs(args.outdir, exist_ok=True)
 for i in range(args.num_repeats):
-    child = subprocess.Popen(args.cmd.split(" "))
-    if args.attach_time == 0:
-        input("Press any key to pause and analyze memory...")
-    else:
-        time.sleep(args.attach_time)
     
     if len(args.pgrepattach) > 0:
-        proc = subprocess.Popen(['pgrep', args.pgrepattach], stdout=subprocess.PIPE)
+        # Do full command
+        os.system(args.cmd)
+        if args.attach_time == 0:
+            input("Press any key to pause and analyze memory...")
+        else:
+            time.sleep(args.attach_time)
+
+
+        if len(args.pgrepuser) > 0:
+            proc = subprocess.Popen(['pgrep', '-u', args.pgrepuser, args.pgrepattach], stdout=subprocess.PIPE)
+        else:
+            proc = subprocess.Popen(['pgrep', args.pgrepattach], stdout=subprocess.PIPE)
         pid = int(proc.stdout.read().decode().split("\n")[0])
     else:
+        child = subprocess.Popen(args.cmd.split(" "))
+        if args.attach_time == 0:
+            input("Press any key to pause and analyze memory...")
+        else:
+            time.sleep(args.attach_time)
+
         pid = child.pid
 
     start, end = tuple(args.heap_range.split(','))
