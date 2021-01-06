@@ -1,6 +1,6 @@
 """
 Run the heap analysis code!
-Example: python harvest_heap_data.py 'gnome-terminal -- vim' --pgrep vim
+Example: python harvest_heap_data.py 'gnome-terminal -- vim' --pgrepattach vim
 """
 
 import argparse
@@ -17,8 +17,8 @@ parser.add_argument("--num_repeats",type=int, default=5, help="Re-run the binary
 
 parser.add_argument("--heap_region",type=str, default="[heap]", help="name of the memory region to analyze (as seen in proc/pid/maps)")
 parser.add_argument("--attach_time",type=int, default=0, help="How long (in seconds) to wait before attaching and analyzing. If 0, await user input")
-parser.add_argument("--heap_range",  type=str, default="0,0", help='Value like (2,10). If there are multiple regions with the specified name, we will analyze any' \
-                                                'between 2 and 10 for example, following their order in /proc/./maps',)
+parser.add_argument("--length_lb",type=int, default=-1, help="lower bound on the length of scanned regions")
+parser.add_argument("--length_ub",type=int, default=2**32, help="upper bound on the length of scanned regions")
 
 parser.add_argument("--pgrepattach",type=str, default="", help="expression to pgrep for and attach to. If none is provided, will just attach to the PID of the spawned subprocess. Also allows for arbitrary command lines.")
 parser.add_argument("--pgrepuser",type=str, default="", help="owner of the sought process (ie, www-data for apache handlers)")
@@ -59,20 +59,20 @@ for i in range(args.num_repeats):
 
         pid = child.pid
 
-    start, end = tuple(args.heap_range.split(','))
 
-    strings = ['\"{}_{}\"'.format(args.heap_region, str(i)) for i in range(int(start), int(end)+1)]
-    list_string = '[' + ','.join(strings) + ']'
+    list_string = '["{}"]'.format(args.heap_region)
 
     print(list_string)
 
     print(args.online)
 
     # dump the memory
-    os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, {}, True, \"{}\", {}, {})'" \
+    os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, {}, {},{}, True, \"{}\", {}, {})'" \
         .format(
             pid, 
             list_string, 
+            args.length_lb,
+            args.length_ub,
             "{}/run{}_".format(args.outdir, i), 
             args.online,
             args.orderby
