@@ -194,10 +194,10 @@ numberby = how to number regions with the same name. If 0, order in /proc/maps w
 def gdb_main(pid, sources=None, online=True, name="", dump=False, llb = -1, lub=2**30, numberby=0):
     maplist = build_maplist(pid, numberby)
     if online:
-        memgraph = build_graph(maplist, sources, dump, name, llb, lub)
+        memgraph = build_graph(maplist, sources=sources, dump=dump, dumpname=name, length_lb=llb, length_ub=lub)
     else:
-        dump_mem(maplist, sources, llb, lub, name)
-        memgraph = build_graph_from_dumps(maplist, sources, name, llb, lub)
+        dump_mem(maplist, sources=sources, dumpname=name, length_lb=llb, length_ub=lub)
+        memgraph = build_graph_from_dumps(maplist, sources=sources, dumpname=name, length_lb=llb, length_ub=lub)
     with open(name + "memgraph.pickle", "wb") as f:
         pickle.dump(memgraph, f)
     with open(name + "maplist.pickle", "wb") as f2:

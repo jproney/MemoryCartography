@@ -14,4 +14,8 @@ To build the memory cartography graph on Vim run:
 
 python refine_memory_map.py 'gnome-terminal -- vim' --pgrepattach vim --num_repeats 3 --pgrepkill vim --outdir vim_map
 
+To determine the number of regions reachable from the region vim.basic_4, run
+
+python graph_util.py vim_map/memgraph_final.pickle --region /usr/bin/vim.basic_4
+
 Note: An unpleasant sideaffect is the abundance of .sw* files produced. Do rm .sw* to get rid of these once you're done.
