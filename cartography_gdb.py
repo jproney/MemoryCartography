@@ -38,7 +38,7 @@ def build_maplist(pid, numberby=0):
         rangelist = mapdict[seg]
 
         if numberby == 1:
-            # Order by size, descending.
+            # Number by size, descending.
             rangelist.sort(key=lambda reg: reg[1] - reg[0], reverse=True)
 
         for i,reg in enumerate(rangelist):
@@ -188,11 +188,11 @@ name = prefix for all saved files, including pickled data structures and memory 
 dump = whether to save dumps of osurce regions when scan is done online. Offline scans will automatically
        save dumps
 llb, lub = upper and lower bounds on lengths of source regions to scan
-orderby = how to number regions with the same name. If 0, order in /proc/maps will be preserved. If 1,
+numberby = how to number regions with the same name. If 0, order in /proc/maps will be preserved. If 1,
           they will be ordered by decreasing length.
 """
-def gdb_main(pid, sources=None, online=True, name="", dump=False, llb = -1, lub=2**30, orderby=0):
-    maplist = build_maplist(pid, orderby)
+def gdb_main(pid, sources=None, online=True, name="", dump=False, llb = -1, lub=2**30, numberby=0):
+    maplist = build_maplist(pid, numberby)
     if online:
         memgraph = build_graph(maplist, sources, dump, name, llb, lub)
     else:

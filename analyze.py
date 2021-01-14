@@ -14,12 +14,15 @@ parser.add_argument("--rank", type=int, default=0, help="An integer representing
 parser.add_argument("--heap_idx", type=int, default=0, help="An integer representing the index of the heap we are interested in, in descending order of size.")
 args = parser.parse_args()
 
+# list of memory graph data structures. Store lists of outgoing pointers from some number of source regions
 graphfiles = sorted([args.dir + f for f in os.listdir(args.dir) if f.endswith("memgraph.pickle")])
 memgraphs = [pickle.load(open(gf, "rb")) for gf in graphfiles]
 
+# list of data structures containing all mapped regions in the target process
 mapfiles = sorted([args.dir + f for f in os.listdir(args.dir) if f.endswith("maplist.pickle")])
 maplists = [pickle.load(open(mf, "rb")) for mf in mapfiles]
 
+# the names which prefix al of the files for each run
 runnames = [x[len(args.dir):].split("_")[0] for x in mapfiles]
 
 heapfiles = []

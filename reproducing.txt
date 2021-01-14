@@ -1,7 +1,17 @@
-Steps to reproduce results from the paper
+Steps to reproduce results from the paper.
+Run on commit fc0689b59f2ee50a4ea7d8c78f9d2a58d822ce9a
 
 1. Vim
 
 To reproduce the results of the paper on the Vim text editor, run:
 
-python harvest_heap_data.py 'gnome-terminal -- vim' --pgrepattach vim --num_repeats 10 --pgrepkill vim
+sudo python harvest_heap_data.py 'gnome-terminal -- vim' --pgrepattach vim --num_repeats 10 --pgrepkill vim --outdir vim_heap_analysis
+
+This will open a terminal with the Vim editor launched. Do whatever you want in the editor window, and then press any key on the 
+original terminal to begin harvesting the data. Repeat 10 times.
+
+To build the memory cartography graph on Vim run:
+
+python refine_memory_map.py 'gnome-terminal -- vim' --pgrepattach vim --num_repeats 3 --pgrepkill vim --outdir vim_map
+
+Note: An unpleasant sideaffect is the abundance of .sw* files produced. Do rm .sw* to get rid of these once you're done.

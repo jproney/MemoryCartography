@@ -1,5 +1,7 @@
 """
 Run memory cartograhy multiple times and bulid a refined memory graph
+Example: python refine_memory_map.py 'gnome-terminal -- vim' --pgrepattach vim --num_repeats 3 --pgrepkill vim --outdir vim_map
+Example Usage: python refine_memory_map.py 'firefox mozilla.org' --outdir ff_map --attach_time 15 --num_repeats 3 --pgrepattach 'Web Content' --pgrepkill 'firefox' --outidr ff_map
 """
 
 import argparse
@@ -36,7 +38,7 @@ if args.dump:
             pid = child.pid
 
         # dump the memory
-        os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, dump=True, name=\"{}\", online=False)'" \
+        os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, name=\"{}\", online=False, dump=True)'" \
             .format(
                 pid, 
                 "{}/run{}_".format(args.outdir, i), 
@@ -48,6 +50,8 @@ if args.dump:
             os.system("pkill -9 '{}'".format(args.pgrepkill))    
         else:
             os.system("kill -9 {}".format(pid))    
+
+print("Finished dumping memory! Refining graph...")
 
 #refine the memory graph
 mg = None

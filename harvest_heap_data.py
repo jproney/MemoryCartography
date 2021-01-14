@@ -1,7 +1,7 @@
 """
 Run the heap analysis code!
-Example: python harvest_heap_data.py 'gnome-terminal -- vim' --pgrepattach vim --num_repeats 10 --pgrepkill vim
-Example: python harvest_heap_data.py 'firefox mozilla.org' --outdir ff_map --attach_time 15 --num_repeats 3 --pgrepattach 'Web Content' --pgrepkill 'firefox'
+Example: python harvest_heap_data.py 'gnome-terminal -- vim' --pgrepattach vim --num_repeats 10 --pgrepkill vim --outdir vim_heap_analysis
+Example: python harvest_heap_data.py 'firefox mozilla.org' --outdir ff_map --attach_time 15 --num_repeats 3 --pgrepattach 'Web Content' --pgrepkill 'firefox' --outdir ff_heap
 See parser for input arguments. Reuslt files will be saved to "outdir," and can then be analyzed using `analyze.py`
 """
 
@@ -30,7 +30,7 @@ parser.add_argument("--killsig",type=int, default=9, help="Signal number to send
 parser.add_argument("--online", dest='online', action='store_true', help="Whether to read pointers from memory in GDB, or to dump memory using GDB and read from the dumps")
 parser.add_argument("--offline", dest='online', action='store_false', help="Whether to read pointers from memory in GDB, or to dump memory using GDB and read from the dumps")
 
-parser.add_argument("--orderby",type=int, default=0, help="0 to index by process order in /proc/maps, 1 to order descending by segment size")
+parser.add_argument("--numberby",type=int, default=0, help="0 to index by process order in /proc/maps, 1 to number by descending segment size")
 
 
 args = parser.parse_args()
@@ -64,20 +64,16 @@ for i in range(args.num_repeats):
 
     list_string = '["{}"]'.format(args.heap_region)
 
-    print(list_string)
-
-    print(args.online)
-
     # dump the memory
-    os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, {}, {},{}, True, \"{}\", {}, {})'" \
+    os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, sources={}, online={}, name=\"{}\", dump=True, llb={}, lub={}, numberby={})'" \
         .format(
             pid, 
             list_string, 
+            args.online,
+            "{}/run{}_".format(args.outdir, i), 
             args.length_lb,
             args.length_ub,
-            "{}/run{}_".format(args.outdir, i), 
-            args.online,
-            args.orderby
+            args.numberby
             ))
     
     # determine who to kill
