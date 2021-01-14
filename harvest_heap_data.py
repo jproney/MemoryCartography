@@ -1,6 +1,8 @@
 """
 Run the heap analysis code!
 Example: python harvest_heap_data.py 'gnome-terminal -- vim' --pgrepattach vim
+Example: python harvest_heap_data.py 'firefox mozilla.org' --outdir ff_map --attach_time 15 --num_repeats 3 --pgrepattach 'Web Content' --pgrepkill 'firefox'
+See parser for input arguments. Reuslt files will be saved to "outdir," and can then be analyzed using `analyze.py`
 """
 
 import argparse
@@ -20,7 +22,7 @@ parser.add_argument("--attach_time",type=int, default=0, help="How long (in seco
 parser.add_argument("--length_lb",type=int, default=-1, help="lower bound on the length of scanned regions")
 parser.add_argument("--length_ub",type=int, default=2**32, help="upper bound on the length of scanned regions")
 
-parser.add_argument("--pgrepattach",type=str, default="", help="expression to pgrep for and attach to. If none is provided, will just attach to the PID of the spawned subprocess. Also allows for arbitrary command lines.")
+parser.add_argument("--pgrepattach",type=str, default="", help="expression to pgrep for and attach to. If none is provided, will just attach to the PID of the spawned subprocess.")
 parser.add_argument("--pgrepuser",type=str, default="", help="owner of the sought process (ie, www-data for apache handlers)")
 parser.add_argument("--pgrepkill",type=str, default="", help="expression to pgrep when killing processes. If not specified, kills process found with pgrep")
 parser.add_argument("--killsig",type=int, default=9, help="Signal number to send for killing processes. Defaults to KILL")
