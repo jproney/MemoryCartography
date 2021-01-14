@@ -1,6 +1,6 @@
 """
 Run the heap analysis code!
-Example: python harvest_heap_data.py 'gnome-terminal -- vim' --pgrepattach vim
+Example: python harvest_heap_data.py 'gnome-terminal -- vim' --pgrepattach vim --num_repeats 10 --pgrepkill vim
 Example: python harvest_heap_data.py 'firefox mozilla.org' --outdir ff_map --attach_time 15 --num_repeats 3 --pgrepattach 'Web Content' --pgrepkill 'firefox'
 See parser for input arguments. Reuslt files will be saved to "outdir," and can then be analyzed using `analyze.py`
 """

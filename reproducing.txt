@@ -1,0 +1,7 @@
+Steps to reproduce results from the paper
+
+1. Vim
+
+To reproduce the results of the paper on the Vim text editor, run:
+
+python harvest_heap_data.py 'gnome-terminal -- vim' --pgrepattach vim --num_repeats 10 --pgrepkill vim
