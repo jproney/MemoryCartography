@@ -5,10 +5,14 @@ Run on commit fc0689b59f2ee50a4ea7d8c78f9d2a58d822ce9a
 
 To reproduce the results of the paper on the Vim text editor, run:
 
-sudo python harvest_heap_data.py 'gnome-terminal -- vim' --pgrepattach vim --num_repeats 10 --pgrepkill vim --outdir vim_heap_analysis
+python harvest_heap_data.py 'gnome-terminal -- vim' --pgrepattach vim --num_repeats 10 --pgrepkill vim --outdir vim_heap_analysis
 
 This will open a terminal with the Vim editor launched. Do whatever you want in the editor window, and then press any key on the 
-original terminal to begin harvesting the data. Repeat 10 times.
+original terminal to begin harvesting the data. This cycle will repeat 10 times.
+
+Now to analyze the results of the memory dumps run:
+
+python analyze.py vim_heap_analysis --rank 0
 
 To build the memory cartography graph on Vim run:
 
@@ -19,3 +23,5 @@ To determine the number of regions reachable from the region vim.basic_4, run
 python graph_util.py vim_map/memgraph_final.pickle --region /usr/bin/vim.basic_4
 
 Note: An unpleasant sideaffect is the abundance of .sw* files produced. Do rm .sw* to get rid of these once you're done.
+
+2. Firefox

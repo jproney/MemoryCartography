@@ -106,6 +106,9 @@ dumpame = prefix for dump files
 length_lb, length_ub = length filters on the list of sources to scan. 
                         as in `dump_mem`, this can be useful if many sources have the
                         same name and only some are relevant
+
+Outputs a double-dictionary data structure. memgraph[a][b] is a list of (src_offset, dst_offset)
+pairs between the regions a and b
 """
 def build_graph(maplist, sources=None, dump=False, dumpname="", length_lb = -1, length_ub = 2**30): # sources = list of source ranges to scan, if None, scan everything, fulldump = dump all of the source regions
     memgraph = {} # adjacency matrix, where entry [i][j] is a list of (src_offset, dst_offset) links between regions i and j
@@ -145,6 +148,9 @@ sources = list of regions to scan for outgoing pointers. If None, scan everythin
           All the sources have to have a corresponding dump file on the disk.
 dumpame = prefix for dump files (for loading them, not for saving them)
 length_lb, length_ub = length filters on the list of sources to scan. 
+
+Outputs a double-dictionary data structure. memgraph[a][b] is a list of (src_offset, dst_offset)
+pairs between the regions a and b
 """
 def build_graph_from_dumps(maplist, sources=None, dumpname="", length_lb = -1, length_ub = 2**30):
     memgraph = {} #adjacency matrix, where entry [i][j] is a list of (src_offset, dst_offset) links between regions i and j
