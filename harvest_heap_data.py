@@ -1,7 +1,7 @@
 """
 Run the heap analysis code!
 Example: python harvest_heap_data.py 'gnome-terminal -- vim' --pgrepattach vim --num_repeats 10 --pgrepkill vim --outdir vim_heap_analysis
-Example: python harvest_heap_data.py 'firefox mozilla.org' --outdir ff_map --attach_time 15 --num_repeats 3 --pgrepattach 'Web Content' --pgrepkill 'firefox' --outdir ff_heap
+Example: python harvest_heap_data.py 'firefox mozilla.org' --outdir ff_heap --attach_time 15 --num_repeats 10 --pgrepattach 'Web Content' --pgrepkill 'firefox' --heap_region '' --length_lb 1048576 --length_ub 1048576
 See parser for input arguments. Reuslt files will be saved to "outdir," and can then be analyzed using `analyze.py`
 """
 
@@ -28,7 +28,6 @@ parser.add_argument("--pgrepkill",type=str, default="", help="expression to pgre
 parser.add_argument("--killsig",type=int, default=9, help="Signal number to send for killing processes. Defaults to KILL")
 
 parser.add_argument("--online", dest='online', action='store_true', help="Whether to read pointers from memory in GDB, or to dump memory using GDB and read from the dumps")
-parser.add_argument("--offline", dest='online', action='store_false', help="Whether to read pointers from memory in GDB, or to dump memory using GDB and read from the dumps")
 
 parser.add_argument("--numberby",type=int, default=0, help="0 to index by process order in /proc/maps, 1 to number by descending segment size")
 
@@ -38,27 +37,21 @@ args = parser.parse_args()
 os.makedirs(args.outdir, exist_ok=True)
 for i in range(args.num_repeats):
     
+    print("Launching...")
+    child = subprocess.Popen(args.cmd.split(" "))
+    if args.attach_time == 0:
+        input("Press any key to pause and analyze memory...")
+    else:
+        print("Pausing for {} seconds".format(args.attach_time))
+        time.sleep(args.attach_time)
+
     if len(args.pgrepattach) > 0:
-        # Do full command
-        os.system(args.cmd)
-        if args.attach_time == 0:
-            input("Press any key to pause and analyze memory...")
-        else:
-            time.sleep(args.attach_time)
-
-
         if len(args.pgrepuser) > 0:
             proc = subprocess.Popen(['pgrep', '-u', args.pgrepuser, args.pgrepattach], stdout=subprocess.PIPE)
         else:
             proc = subprocess.Popen(['pgrep', args.pgrepattach], stdout=subprocess.PIPE)
         pid = int(proc.stdout.read().decode().split("\n")[0])
     else:
-        child = subprocess.Popen(args.cmd.split(" "))
-        if args.attach_time == 0:
-            input("Press any key to pause and analyze memory...")
-        else:
-            time.sleep(args.attach_time)
-
         pid = child.pid
 
 
@@ -80,4 +73,5 @@ for i in range(args.num_repeats):
     if len(args.pgrepkill) > 0:
         os.system("pkill -{} '{}'".format(args.killsig, args.pgrepkill))    
     else:
-        os.system("kill -{} {}".format(args.killsig, pid))    
+        os.system("kill -{} {}".format(args.killsig, pid))  
+    time.sleep(3)  
