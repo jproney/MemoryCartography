@@ -32,4 +32,12 @@ python harvest_heap_data.py 'firefox mozilla.org' --outdir ff_heap --attach_time
 
 then to analyze
 
-python analyze.py ff_heap --rank 0
+python analyze.py ff_heap/ --rank 0
+
+To build the memory cartography map on firefox run:
+
+python refine_memory_map.py 'firefox mozilla.org' --outdir ff_map --attach_time 15 --num_repeats 3 --pgrepattach 'Web Content' --pgrepkill 'firefox' --dump
+
+To determine the connectivity of libxul.so.2 run:
+
+python graph_util.py ff_map/memgraph_final.pickle --region /usr/lib/firefox/libxul.so_2

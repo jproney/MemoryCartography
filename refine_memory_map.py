@@ -51,7 +51,7 @@ if args.dump:
         else:
             os.system("kill -9 {}".format(pid))    
 
-print("Finished dumping memory! Refining graph...")
+    print("Finished dumping memory! Refining graph...")
 
 #refine the memory graph
 mg = None
@@ -61,15 +61,44 @@ for i in range(args.num_repeats):
         if mg:
             for src in mg.keys():
                 for dst in mg[src].keys():
+                    if (src not in newmg.keys()) or (dst not in newmg[src].keys()):
+                        mg[src][dst] = []
+                        continue
+
                     edgelist = mg[src][dst]
+                    newmg_eset = set(newmg[src][dst])
                     newlist = []
                     for e in edgelist:
-                        if e in newmg[src][dst]:
+                        if e in newmg_eset:
                             newlist.append(e)
                     mg[src][dst] = newlist
         else:
             mg = newmg
 
+# Add edges between regions with the same name that are always adjacent
+
+maplists = [pickle.load(open(args.outdir + "/run{}_".format(i) + "maplist.pickle", "rb")) for i in range(args.num_repeats)]
+
+mapdicts = [] # List of dictionaries, one for each run. Dictionaries simply map a region name to its start and end for more convenient retrieval.
+for i in range(args.num_repeats):
+    md = {}
+    for reg in maplists[i]:
+        md[reg[2]] = (reg[0], reg[1])
+    mapdicts.append(md)
+
+
+for src in mg.keys():
+    if any([src not in md for md in mapdicts]):
+        continue
+
+    for dst in mg[src].keys():
+        pref1 = "_".join(src.split("_")[:-1])
+        pref2 = "_".join(dst.split("_")[:-1])
+        if any([dst not in md for md in mapdicts]) or len(pref1) == 0 or len(pref2) == 0 or pref1 != pref2:
+            continue
+
+        if all([md[dst][1] == md[src][0] for md in mapdicts]) or all([md[dst][0] == md[src][1] for md in mapdicts]) :
+            mg[src][dst].append((0,0)) # Virtual edge represents consistent spatial adjasency
 
 with open(args.outdir + "/memgraph_final.pickle", "wb") as f:
     pickle.dump(mg, f)
