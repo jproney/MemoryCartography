@@ -1,5 +1,5 @@
 Steps to reproduce results from the paper.
-Run on commit 9c1787f3ccb7bffaf18aece84061777b469c7155
+Run on commit 6ddac8d0fb68d5a2db6ad5938a52fc1b5edec470
 
 1. Vim
 
@@ -12,7 +12,7 @@ original terminal to begin harvesting the data. This cycle will repeat 10 times.
 
 Now to analyze the results of the memory dumps run:
 
-python analyze.py vim_heap_analysis --rank 0
+python analyze.py vim_heap_analysis/ --rank 0
 
 To build the memory cartography graph on Vim run:
 
@@ -41,3 +41,17 @@ python refine_memory_map.py 'firefox mozilla.org' --outdir ff_map --attach_time 
 To determine the connectivity of libxul.so.2 run:
 
 python graph_util.py ff_map/memgraph_final.pickle --region /usr/lib/firefox/libxul.so_2
+
+3. Nginx
+
+Steps to set up the VM:
+
+Download the VM from http://pages.cs.wisc.edu/~rist/642-spring-2014/hw/hwEC.html
+Set network adapter to host-only network
+Open the VM and edit /etc/network/interfaces to put the VM on the static IP 192.168.26.2
+Restart the network manager in the VM, and check that the host can ping the VM
+
+
+python3 harvest_heap_data.py 'sudo /etc/init.d/nginx restart; sleep 5; python nginx_requests.py; echo "done!"' --outdir nginx_heap --attach_time 25 --num_repeats 1 --pgrepattach 'nginx' --pgrepuser 'www-data' --pgrepkill 'nginx' --killsig 0
+
+
