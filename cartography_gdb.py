@@ -8,6 +8,9 @@ import gdb #won't work unless script is being run under a GDB process
 import re
 import pickle
 import os
+import struct
+
+pointer_sz = struct.calcsize("P")
 
 """
 Construct list of contiguous mapped regions, their offsets, and their names
@@ -126,7 +129,7 @@ def build_graph(maplist, sources=None, dump=False, dumpname="", length_lb = -1, 
         print("Scanning " + str(region) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(region[1] - region[0]))
         if dump:
             gdb.execute("dump memory {}.dump {} {}".format(dumpname + region[2], region[0], region[1]))
-        for addr in range(region[0], region[1], 8):
+        for addr in range(region[0], region[1], pointer_sz):
             if (addr - region[0]) % ((region[1] - region[0])//10) == 0:
                 print("{}%".format(10*(addr - region[0]) / ((region[1] - region[0])//10)))
             try:
@@ -169,18 +172,18 @@ def build_graph_from_dumps(maplist, sources=None, dumpname="", length_lb = -1, l
         if os.path.exists("{}.dump".format(dumpname + region[2].split("/")[-1])):
             with open("{}.dump".format(dumpname + region[2].split("/")[-1]), "rb") as f:
                 addr = region[0]
-                raw_mem = f.read(8)
+                raw_mem = f.read(pointer_sz)
 
                 while raw_mem:
-                    val = int.from_bytes(raw_mem, "little")
+                    val = struct.unpack("P", raw_mem)[0]
                     dst = check_pointer(val, maplist)
 
                     if dst:
                         offset, dstseg = dst
                         memgraph[region[2]][dstseg].append((addr - region[0], offset))
 
-                    raw_mem = f.read(8)
-                    addr += 8
+                    raw_mem = f.read(pointer_sz)
+                    addr += pointer_sz
 
     return memgraph
 

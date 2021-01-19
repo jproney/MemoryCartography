@@ -14,6 +14,9 @@ import re
 import tempfile
 import itertools
 import math
+import struct
+
+pointer_sz = struct.calcsize("P")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("dir", help="output directory to analyze (created by runing harvest_heap_data.py)")
@@ -49,7 +52,7 @@ def read_heap_bytes(heapfile, offset, nbytes):
 
 def read_heap_pointer(heapfile, offset):
     heapfile.seek(offset)
-    return struct.unpack('P', heapfile.read(8))[0]
+    return struct.unpack('P', heapfile.read(pointer_sz))[0]
 
 def read_heap_int(heapfile, offset):
     heapfile.seek(offset)
