@@ -36,7 +36,7 @@ def build_graph_from_dumps(maplist, sources=None, dumpname="", length_lb = -1, l
         if os.path.exists("{}.dump".format(dumpname + region[2].split("/")[-1])):
             with open("{}.dump".format(dumpname + region[2].split("/")[-1]), "rb") as f:
                 addr = region[0]
-                raw_mem = f.read(pointer_sz)
+                raw_mem = f.read(POINTER_SZ)
 
                 while raw_mem:
                     val = int.from_bytes(raw_mem, "little")
@@ -46,8 +46,8 @@ def build_graph_from_dumps(maplist, sources=None, dumpname="", length_lb = -1, l
                         offset, dstseg = dst
                         memgraph[region[2]][dstseg].append((addr - region[0], offset))
 
-                    raw_mem = f.read(pointer_sz)
-                    addr += pointer_sz
+                    raw_mem = f.read(POINTER_SZ)
+                    addr += POINTER_SZ
 
     return memgraph
 
@@ -57,7 +57,7 @@ parser.add_argument("--n", type=int, default=10, help="number of runs")
 parser.add_argument("--pointer_sz", type=int, default=8, help="Length of a pointer in memory being analyzed")
 args = parser.parse_args()
 
-pointer_sz = args.pointer_sz
+POINTER_SZ = args.pointer_sz
 
 ml = [pickle.load(open("{}/run{}_maplist.pickle".format(args.dir, i), "rb")) for i in range(args.n)]
 mg = [build_graph_from_dumps(ml[i], sources=["[heap]"], dumpname="{}/run{}_".format(args.dir, i)) for i in range(args.n)]

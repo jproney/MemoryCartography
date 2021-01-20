@@ -209,6 +209,7 @@ if args.save:
     pickle.dump((lb_final, ub_final, section, dst_offset, aln, aln_offset), open(args.dir + "classifier_{}_{}.pickle".format(section.split("/")[-1], dst_offset), 'wb'))
 print("TOTAL TPR: {} ({}/{})".format(grand_tp/grand_total_true, grand_tp, grand_total_true))
 print("TOTAL FPR: {} ({}/{})".format(grand_fp/(grand_total_addrs - grand_total_true), grand_fp, grand_total_addrs - grand_total_true))
+print("TOTAL PRECISION: {}".format(grand_tp / (grand_tp + grand_fp)))
 print(section)
 print(dst_offset)
 print(minprec)
