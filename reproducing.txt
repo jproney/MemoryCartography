@@ -54,5 +54,5 @@ python3 harvest_heap_data.py 'sudo /etc/init.d/apache2 stop; sleep 2; sudo /etc/
 
 python analyze.py apache_heap/ --rank 0 --exclude_src [heap]_2 [heap]_0 --pointer_sz 4
 
-python3 refine_memory_map.py 'sudo /etc/init.d/apache2 stop; sleep 2; sudo /etc/init.d/apache2 start; echo "done!"' --outdir apache_map--attach_time 0 --num_repeats 3 --pgrepattach 'apache' --pgrepuser 'www-data' --pgrepkill 'apache' --killsig 0 --dump --nograph
+python3 refine_memory_map.py 'sudo /etc/init.d/apache2 stop; sleep 2; sudo /etc/init.d/apache2 start; echo "done!"' --outdir apache_map --attach_time 0 --num_repeats 3 --pgrepattach 'apache' --pgrepuser 'www-data' --pgrepkill 'apache' --killsig 0 --dump --nograph
 
