@@ -19,6 +19,8 @@ parser.add_argument("--num_repeats",type=int, default=3, help="Re-run the binary
 parser.add_argument("--attach_time",type=int, default=0, help="How long (in seconds) to wait before attaching and analyzing. If 0, await user input")
 parser.add_argument("--pgrepattach",type=str, default="", help="expression to pgrep for and attach to. If none is provided, will just attach to the PID of the spawned subprocess.")
 parser.add_argument("--pgrepkill",type=str, default="", help="expression to pgrep when killing processes. If not specified, kills process found with pgrep")
+parser.add_argument("--pointer_sz", type=int, default=8, help="Length of a pointer in memory being analyzed")
+
 
 args = parser.parse_args()
 
@@ -38,11 +40,11 @@ if args.dump:
             pid = child.pid
 
         # dump the memory
-        os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, name=\"{}\", online=False, dump=True)'" \
+        os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, name=\"{}\", online=False, dump=True, psize={})'" \
             .format(
                 pid, 
                 "{}/run{}_".format(args.outdir, i), 
-                ))
+                args.pointer_sz))
         
 
         # determine who to kill

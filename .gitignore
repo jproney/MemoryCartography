@@ -4,3 +4,4 @@ __pycache__/*
 *.pickle
 test.txt
 *.swp
+*.bin

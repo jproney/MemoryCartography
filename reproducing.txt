@@ -42,16 +42,13 @@ To determine the connectivity of libxul.so.2 run:
 
 python graph_util.py ff_map/memgraph_final.pickle --region /usr/lib/firefox/libxul.so_2
 
-3. Nginx
+3. Apache + Heartbleed
 
-Steps to set up the VM:
+First, get the Apache wordpress server running on the Heartbleed VM.
 
-Download the VM from http://pages.cs.wisc.edu/~rist/642-spring-2014/hw/hwEC.html
-Set network adapter to host-only network
-Open the VM and edit /etc/network/interfaces to put the VM on the static IP 192.168.26.2
-Restart the network manager in the VM, and check that the host can ping the VM
+python3 harvest_heap_data.py '' --outdir apache_heap --attach_time 5 --num_repeats 1 --pgrepattach 'apache' --pgrepuser 'www-data' --pgrepkill 'apache' --killsig 0 --nograph
 
+Confirmed: Heartbleed leaks from labelled heap in single-process Apache (most likely [heap]_1)
 
-python3 harvest_heap_data.py 'sudo /etc/init.d/nginx restart; sleep 5; python nginx_requests.py; echo "done!"' --outdir nginx_heap --attach_time 25 --num_repeats 1 --pgrepattach 'nginx' --pgrepuser 'www-data' --pgrepkill 'nginx' --killsig 0
-
+python3 harvest_heap_data.py 'sudo /etc/init.d/apache2 stop; sleep 2; sudo /etc/init.d/apache2 start; echo "done!"' --outdir apache_heap --attach_time 0 --num_repeats 3 --pgrepattach 'apache' --pgrepuser 'www-data' --pgrepkill 'apache' --killsig 0 --nograph
 

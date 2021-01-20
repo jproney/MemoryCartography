@@ -10,7 +10,7 @@ import pickle
 import os
 import struct
 
-pointer_sz = struct.calcsize("P")
+POINTER_SZ = struct.calcsize("P")
 
 """
 Construct list of contiguous mapped regions, their offsets, and their names
@@ -129,7 +129,7 @@ def build_graph(maplist, sources=None, dump=False, dumpname="", length_lb = -1, 
         print("Scanning " + str(region) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(region[1] - region[0]))
         if dump:
             gdb.execute("dump memory {}.dump {} {}".format(dumpname + region[2], region[0], region[1]))
-        for addr in range(region[0], region[1], pointer_sz):
+        for addr in range(region[0], region[1], POINTER_SZ):
             if (addr - region[0]) % ((region[1] - region[0])//10) == 0:
                 print("{}%".format(10*(addr - region[0]) / ((region[1] - region[0])//10)))
             try:
@@ -172,7 +172,7 @@ def build_graph_from_dumps(maplist, sources=None, dumpname="", length_lb = -1, l
         if os.path.exists("{}.dump".format(dumpname + region[2].split("/")[-1])):
             with open("{}.dump".format(dumpname + region[2].split("/")[-1]), "rb") as f:
                 addr = region[0]
-                raw_mem = f.read(pointer_sz)
+                raw_mem = f.read(POINTER_SZ)
 
                 while raw_mem:
                     val = struct.unpack("P", raw_mem)[0]
@@ -182,8 +182,8 @@ def build_graph_from_dumps(maplist, sources=None, dumpname="", length_lb = -1, l
                         offset, dstseg = dst
                         memgraph[region[2]][dstseg].append((addr - region[0], offset))
 
-                    raw_mem = f.read(pointer_sz)
-                    addr += pointer_sz
+                    raw_mem = f.read(POINTER_SZ)
+                    addr += POINTER_SZ
 
     return memgraph
 
@@ -200,7 +200,8 @@ llb, lub = upper and lower bounds on lengths of source regions to scan
 numberby = how to number regions with the same name. If 0, order in /proc/maps will be preserved. If 1,
           they will be ordered by decreasing length.
 """
-def gdb_main(pid, sources=None, online=True, name="", dump=False, llb = -1, lub=2**30, numberby=0, graph=True):
+def gdb_main(pid, sources=None, online=True, name="", dump=False, llb = -1, lub=2**30, numberby=0, graph=True, psize=8):
+    POINTER_SZ = psize
     maplist = build_maplist(pid, numberby)
     if online:
         memgraph = build_graph(maplist, sources=sources, dump=dump, dumpname=name, length_lb=llb, length_ub=lub)

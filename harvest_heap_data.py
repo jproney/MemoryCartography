@@ -31,6 +31,8 @@ parser.add_argument("--online", dest='online', action='store_true', help="Whethe
 parser.add_argument("--nograph", dest='nograph', action='store_true', help="Don't build out the graph. Just save the maplists and dumps and build the graph later")
 parser.add_argument("--numberby",type=int, default=0, help="0 to index by process order in /proc/maps, 1 to number by descending segment size")
 
+parser.add_argument("--pointer_sz", type=int, default=8, help="Length of a pointer in memory being analyzed")
+
 
 args = parser.parse_args()
 
@@ -58,7 +60,7 @@ for i in range(args.num_repeats):
     list_string = '["{}"]'.format(args.heap_region)
 
     # dump the memory
-    os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, sources={}, online={}, name=\"{}\", dump=True, llb={}, lub={}, numberby={}, graph={})'" \
+    os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, sources={}, online={}, name=\"{}\", dump=True, llb={}, lub={}, numberby={}, graph={}, psize={})'" \
         .format(
             pid, 
             list_string, 
@@ -67,7 +69,8 @@ for i in range(args.num_repeats):
             args.length_lb,
             args.length_ub,
             args.numberby,
-            not args.nograph))
+            not args.nograph,
+            args.pointer_sz))
     
     # determine who to kill
     if len(args.pgrepkill) > 0:
