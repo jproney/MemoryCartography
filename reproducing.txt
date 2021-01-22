@@ -1,10 +1,5 @@
-# Final Project on Memory Cartography
-
-This repository contains tools for performing memory cartography attacks and discovering pointers to 
-data sections inside unstructured heap data.
-
-
 Steps to reproduce results from the paper.
+Run on commit ac8103adba49a3bb70e8a3f5dc66c1f7c6472466
 
 1. Vim
 

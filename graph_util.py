@@ -1,46 +1,14 @@
 """
 Graph algorithms for analyzing the memory map
 """
-import collections
 
-"""
-Find the shortest path using a simple BFS
-Graph is a double-dictionary
-"""
-def shortest_path(graph, start, end):
-    if not (start in graph.keys() and end in graph.keys()):
-        return None
-
-    visited = set([])
-    prev = {}
-    for k in graph.keys():
-        prev[k] = ""
-
-    nodeq = collections.deque() #FIFO queue
-    nodeq.appendleft(start)
-
-    while len(nodeq) > 0:
-        currnode = nodeq.pop()
-        visited.add(currnode)
-
-        if currnode == end:
-            path = []
-            step = end
-            while len(step) > 0:
-                path.insert(0,step)
-                step = prev[step]
-            return path
-
-        for nxt in graph.keys():
-            if len(graph[currnode][nxt]) > 0 and nxt not in visited:
-                prev[nxt] = currnode
-                nodeq.appendleft(nxt)
-    
-    return None
+import pickle
+import argparse
 
 """
 Find strongly connected components in the memory graph
-graph is a double-dictionary
+graph is a double-dictionary, like the kind in the file
+memgraph_final.pickle produced by `refine_memory_map.py` 
 """
 def find_scc(graph):
     grev = {} #reverse graph
@@ -90,3 +58,41 @@ def find_scc(graph):
 
     return sccs, scc_edgelist
 
+
+"""
+Simple DFS that runs on an edgelist and returns the list of nodes reachable from a source
+Edgelist is just a list of sets of ints, src is an int
+"""
+def simple_dfs(edgelist, src):
+    visited = set([])
+    def search(g, source):
+            visited.add(source)
+            for nxt in edgelist[source]:
+                if  nxt not in visited:
+                    visited.add(nxt)
+                    search(g, nxt)
+    search(edgelist, src)
+    return visited
+
+"""
+Example Usage: python graph_util.py vim_map/memgraph_final.pickle --region /usr/bin/vim.basic_4
+"""
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("graph", help="graph to be loaded and analyzed")
+    parser.add_argument("--region", default=None, help="region of interest")
+    args = parser.parse_args()
+
+    mg = pickle.load(open(args.graph, "rb"))
+    scc, edges = find_scc(mg)
+    if args.region is None:
+        print(scc)
+    else:
+        total = sum([len(x) for x in scc])
+        roi = [i for i,x in enumerate(scc) if args.region in x][0] # scc constatining region of interest
+        rlen = len(scc[roi])
+        reachable = simple_dfs(edges, roi)
+        n_reachable_reg = sum([len(scc[i]) for i in reachable])
+
+        print("SCC of interest contains {} of {} regions".format(rlen, total))
+        print("SCC of interest can reach {} of {} regions".format(n_reachable_reg, total))
