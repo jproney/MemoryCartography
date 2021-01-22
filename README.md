@@ -51,7 +51,7 @@ python graph_util.py ff_map/memgraph_final.pickle --region /usr/lib/firefox/libx
 
 First, get the Apache wordpress server running on the Heartbleed VM. (Make sure to do /etc/init.d/nginx stop)
 
-Heartbleed leaks from labelled heap in single-process Apache ([heap]_1).  To run memory cartography, executing the following from /home/user/Documents/MemoryCartography in the VM:
+Heartbleed leaks from labelled heap in single-process Apache ([heap]_1).  To run memory cartography, execute the following from /home/user/Documents/MemoryCartography in the VM:
 
 python3 harvest_heap_data.py 'sudo /etc/init.d/apache2 stop; sleep 2; sudo /etc/init.d/apache2 start; echo "done!"' --outdir apache_heap --attach_time 0 --num_repeats 10 --pgrepattach 'apache' --pgrepuser 'www-data' --pgrepkill 'apache' --killsig 0 --nograph
 
