@@ -55,12 +55,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument("dir", help="directory to be analyzed")
 parser.add_argument("--n", type=int, default=10, help="number of runs")
 parser.add_argument("--pointer_sz", type=int, default=8, help="Length of a pointer in memory being analyzed")
+parser.add_argument("--sources", nargs="+", default=[], help="Heap regions to exclude from analysis")
 args = parser.parse_args()
 
 POINTER_SZ = args.pointer_sz
 
 ml = [pickle.load(open("{}/run{}_maplist.pickle".format(args.dir, i), "rb")) for i in range(args.n)]
-mg = [build_graph_from_dumps(ml[i], sources=["[heap]"], dumpname="{}/run{}_".format(args.dir, i)) for i in range(args.n)]
+mg = [build_graph_from_dumps(ml[i], sources= args.sources if len(args.sources) > 0 else None, dumpname="{}/run{}_".format(args.dir, i)) for i in range(args.n)]
 
 for i in range(args.n):
     pickle.dump(mg[i], open("{}/run{}_memgraph.pickle".format(args.dir, i), "wb"))
