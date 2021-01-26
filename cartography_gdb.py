@@ -19,7 +19,7 @@ numberby = How to number the regions with the same name. If 1, will number the l
            This is useful for making sure that the same regions have the same name on each run.
            (e.g. heap_0, heap_1, and heap_2 will correspond to the same logical region beween runs)
 """
-def build_maplist(pid, numberby=0):
+def build_maplist(pid, numberby=0, coalesce=False):
     gdb.execute("attach " + str(pid))
 
     maps = [re.split(r'\s{1,}', s)[1:] for s in gdb.execute("info proc mappings", False, True).split("\n")[4:-1]]
@@ -32,8 +32,10 @@ def build_maplist(pid, numberby=0):
         if segname not in mapdict:
             mapdict[segname] = [(int(segment[0],16), int(segment[1],16))] # create a new key if this is the first instance of this name
         else:
-            mapdict[segname].append((int(segment[0],16), int(segment[1],16))) # just extend the list of ranges
-        
+            if coalesce and int(segment[0], 16) == mapdict[segname][-1][1]: #comibine adjascent memory ranges into one range
+                mapdict[segname][-1] = (mapdict[segname][-1][0], int(segment[1], 16))
+            else:
+                mapdict[segname].append((int(segment[0],16), int(segment[1],16)))        
     # flat version of mapped memory reigons. List of tuples of form (start, end, name), where "name" includes an
     # index to keep ranges from having the same name 
     maplist=[] 
@@ -200,9 +202,9 @@ llb, lub = upper and lower bounds on lengths of source regions to scan
 numberby = how to number regions with the same name. If 0, order in /proc/maps will be preserved. If 1,
           they will be ordered by decreasing length.
 """
-def gdb_main(pid, sources=None, online=True, name="", dump=False, llb = -1, lub=2**30, numberby=0, graph=True, psize=8):
+def gdb_main(pid, sources=None, online=True, name="", dump=False, llb = -1, lub=2**30, numberby=0, graph=True, psize=8, coalesce=False):
     POINTER_SZ = psize
-    maplist = build_maplist(pid, numberby)
+    maplist = build_maplist(pid, numberby, coalesce)
     if online:
         memgraph = build_graph(maplist, sources=sources, dump=dump, dumpname=name, length_lb=llb, length_ub=lub)
     else:
