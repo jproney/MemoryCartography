@@ -31,6 +31,8 @@ parser.add_argument("--online", dest='online', action='store_true', help="Whethe
 parser.add_argument("--nograph", dest='nograph', action='store_true', help="Don't build out the graph. Just save the maplists and dumps and build the graph later")
 parser.add_argument("--numberby",type=int, default=0, help="0 to index by process order in /proc/maps, 1 to number by descending segment size")
 
+parser.add_argument("--coalesce",type=int, default=1, help="0 to treat all memory regions separately, 1 to combine adjacent same-named memory regions")
+
 parser.add_argument("--pointer_sz", type=int, default=8, help="Length of a pointer in memory being analyzed")
 
 
@@ -70,7 +72,8 @@ for i in range(args.num_repeats):
             args.length_ub,
             args.numberby,
             not args.nograph,
-            args.pointer_sz))
+            args.pointer_sz,
+            args.coalesce == 1))
     
     # determine who to kill
     if len(args.pgrepkill) > 0:
