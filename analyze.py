@@ -74,7 +74,7 @@ for i in range(len(runnames)):
     mapdicts.append(md)
 
 
-pointerdict = {} # dictionary mapping from (region, offset) pairs to 
+pointerdict = {} # dictionary mapping from (region, offset) pairs to frequencies accross each heap region
 
 # Get statistics about which pointer destinations are most frequent across all heaps and all runs
 for i in range(len(runnames)): # iterate over runs
@@ -99,12 +99,17 @@ print((section, dst_offset))
 
 # Addrs is double-list containing addresses of the pointer of interst. Outer dimension is across runs, inner is accross heap regions.
 addrs = [[sorted([md[h][0] + edge[0] for edge in mg[h][section] if edge[1] == dst_offset]) for h in hps] for md,mg,hps in zip(mapdicts, memgraphs, heapnames)]
+min_number = min([sum([len(h) for h in r]) for r in addrs]) #The lowest number of times the pointer occurs in any run
+if min_number == 0:
+    exit("Pointer of rank {} not found in all runs. Try another pointer.".format(args.rank))
 
+# get the minimum distance between any 2 pointers
 mindist = min([addrs[i][j][k+1] - addrs[i][j][k] for i in range(len(addrs)) for j in range(len(addrs[i])) for k in range(0, len(addrs[i][j])-1)])
 
 aln = args.pointer_sz
 aln_offset = 0
-ref = min([x for a in addrs[0] for x in a])
+
+ref = min([x for a in addrs[0] for x in a]) # get a reference pointer for computing the offsets of the poitners
 while all([a%(aln*2) == ref%(aln*2) for run in addrs for hp in run for a in hp]) and aln < mindist:
     aln *= 2
     aln_offset = ref%aln
@@ -169,7 +174,7 @@ for i in range(len(runnames)):
         current_heap_fp = []
 
         # scan positions that conform to the alignment rules. We should be able to get the correct alignment off of the training samples, so we shouldn't need to 
-        # bother with other positoins
+        # bother with other positions
         for offset in range(math.ceil(preread/aln)*aln + aln_offset, mapdicts[i][heapname][1] - mapdicts[i][heapname][0] - postread, aln):
             dat = np.array([x for x in read_heap_bytes(heaps[i][j], offset - preread, (preread + postread))]) #read data from the heap
             if all(lb2 <= dat) and all(dat <= ub2):
@@ -210,7 +215,6 @@ if args.save:
 print("TOTAL TPR: {} ({}/{})".format(grand_tp/grand_total_true, grand_tp, grand_total_true))
 print("TOTAL FPR: {} ({}/{})".format(grand_fp/(grand_total_addrs - grand_total_true), grand_fp, grand_total_addrs - grand_total_true))
 print("TOTAL PRECISION: {}".format(grand_tp / (grand_tp + grand_fp)))
-print(section)
-print(dst_offset)
-print(minprec)
-print(sum(minprec)/len(minprec)) # average precision in the worst region
+print("TARGET REGION: {}".format(section))
+print("OFFSET: {}".format(dst_offset))
+print("AVERAGE WORST-CASE PRECISION: {}".format(sum(minprec)/len(minprec))) # average precision in the worst region
