@@ -19,7 +19,7 @@ def check_pointer(addr, maplist):
         elif addr < test[0]:
             ub = med
 
-def build_graph_from_dumps(maplist, sources=None, dumpname="", length_lb = -1, length_ub = 2**30):
+def build_graph_from_dumps(maplist, pointer_sz=8, sources=None, dumpname="", length_lb = -1, length_ub = 2**30):
     memgraph = {} #adjacency matrix, where entry [i][j] is a list of (src_offset, dst_offset) links between regions i and j
     sourcelist = [x for x in maplist if x[2].split("_")[0] in sources] if sources else maplist
     sourcelist = [x for x in sourcelist if length_lb <= x[1] - x[0] and length_ub >= x[1] - x[0]]
@@ -36,7 +36,7 @@ def build_graph_from_dumps(maplist, sources=None, dumpname="", length_lb = -1, l
         if os.path.exists("{}.dump".format(dumpname + region[2].split("/")[-1])):
             with open("{}.dump".format(dumpname + region[2].split("/")[-1]), "rb") as f:
                 addr = region[0]
-                raw_mem = f.read(POINTER_SZ)
+                raw_mem = f.read(pointer_sz)
 
                 while raw_mem:
                     val = int.from_bytes(raw_mem, "little")
@@ -46,8 +46,8 @@ def build_graph_from_dumps(maplist, sources=None, dumpname="", length_lb = -1, l
                         offset, dstseg = dst
                         memgraph[region[2]][dstseg].append((addr - region[0], offset))
 
-                    raw_mem = f.read(POINTER_SZ)
-                    addr += POINTER_SZ
+                    raw_mem = f.read(pointer_sz)
+                    addr += pointer_sz
 
     return memgraph
 
@@ -58,10 +58,9 @@ parser.add_argument("--pointer_sz", type=int, default=8, help="Length of a point
 parser.add_argument("--sources", nargs="+", default=[], help="Heap regions to exclude from analysis")
 args = parser.parse_args()
 
-POINTER_SZ = args.pointer_sz
 
 ml = [pickle.load(open("{}/run{}_maplist.pickle".format(args.dir, i), "rb")) for i in range(args.n)]
-mg = [build_graph_from_dumps(ml[i], sources= args.sources if len(args.sources) > 0 else None, dumpname="{}/run{}_".format(args.dir, i)) for i in range(args.n)]
+mg = [build_graph_from_dumps(ml[i], pointer_sz=args.pointer_sz, sources= args.sources if len(args.sources) > 0 else None, dumpname="{}/run{}_".format(args.dir, i)) for i in range(args.n)]
 
 for i in range(args.n):
     pickle.dump(mg[i], open("{}/run{}_memgraph.pickle".format(args.dir, i), "wb"))
