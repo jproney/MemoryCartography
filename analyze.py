@@ -217,4 +217,5 @@ print("TOTAL FPR: {} ({}/{})".format(grand_fp/(grand_total_addrs - grand_total_t
 print("TOTAL PRECISION: {}".format(grand_tp / (grand_tp + grand_fp)))
 print("TARGET REGION: {}".format(section))
 print("OFFSET: {}".format(dst_offset))
+print("POINTER ALIGNMENT: {}".format(aln))
 print("AVERAGE WORST-CASE PRECISION: {}".format(sum(minprec)/len(minprec))) # average precision in the worst region
