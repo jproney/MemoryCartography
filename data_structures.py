@@ -5,6 +5,7 @@ Useful Data Structures for memory cartography analyses
 import collections
 import pickle
 import os
+import re
 
 Region = collections.namedtuple("start_addr", "end_addr", "name")
 
@@ -76,7 +77,7 @@ class MemoryGraph:
 # and utilities for analyzing the data
 class RunContainer:
 
-    def __init__(self, runname, heapnames, path="./", maplist=None, memgraph=None, heap_handles=None):
+    def __init__(self, runname, heapnames=None, path="./", maplist=None, memgraph=None, heap_handles=None):
         self.runname = runname
         self.path = path
 
@@ -85,6 +86,10 @@ class RunContainer:
 
         if memgraph is None:
             memgraph = pickle.load(open(path + runname + "_memgraph.pickle", "rb"))
+
+        if heapnames is None:
+            p = re.compile('{}_([.]*_[0-9]).dump'.format(runname))
+            heapnames = [p.search(f).group(1) for f in os.listdir(path) if p.match(f)]
 
         if heap_handles is None:
             heap_handles = [open(path + runname + h + ".dump","rb") for h in heapnames]
@@ -131,10 +136,17 @@ class RunContainer:
     def heap_iterator(self, heapnum, offset, stride):
         h = self.heap_handles[heapnum]
         h.seek(offset)
+        pos = offset
 
         mem = h.read(stride)
         while mem:
-            yield mem
+            yield pos, mem
+            pos += stride
+            mem = h.read(stride)
+
+    # Convieniance function for getting the length of a heap
+    def get_heap_size(self, heapnum):
+        return self.heap_regions[heapnum].end - self.heap_regions[heapnum].start
 
 
     
