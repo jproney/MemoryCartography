@@ -53,6 +53,7 @@ class MapList:
     def find_region(self, region_name):
         return self.regions_dict[region_name]
 
+
 class MemoryGraph:
     # sourcelist = subset of nodelist where edges can originate
     def __init__(self, nodelist, srclist=None):

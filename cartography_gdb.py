@@ -9,6 +9,7 @@ import re
 import pickle
 import os
 import struct
+import data_structures
 
 POINTER_SZ = struct.calcsize("P")
 
@@ -23,59 +24,18 @@ def build_maplist(pid, numberby=0, coalesce=False):
     gdb.execute("attach " + str(pid))
 
     maps = [re.split(r'\s{1,}', s)[1:] for s in gdb.execute("info proc mappings", False, True).split("\n")[4:-1]]
-    # Dict of address data. Keys are segment names. Each dict entry is a list of tuples containing all of the mapped ranges with that name
-    mapdict={} 
+
+    maplist = data_structures.MapList()
+
     for segment in maps:
         segname = segment[-1]
         if segname == "(deleted)":
             segname = segment[-2] + "_(deleted)"
-        if segname not in mapdict:
-            mapdict[segname] = [(int(segment[0],16), int(segment[1],16))] # create a new key if this is the first instance of this name
-        else:
-            if coalesce and int(segment[0], 16) == mapdict[segname][-1][1]: #comibine adjascent memory ranges into one range
-                mapdict[segname][-1] = (mapdict[segname][-1][0], int(segment[1], 16))
-            else:
-                mapdict[segname].append((int(segment[0],16), int(segment[1],16)))        
-    # flat version of mapped memory reigons. List of tuples of form (start, end, name), where "name" includes an
-    # index to keep ranges from having the same name 
-    maplist=[] 
-    for seg in mapdict.keys():
-        rangelist = mapdict[seg]
 
-        if numberby == 1:
-            # Number by size, descending.
-            rangelist.sort(key=lambda reg: reg[1] - reg[0], reverse=True)
+        region = data_structures.Region(segname, int(segment[0],16), int(segment[1],16))
+        maplist.add_region(region)
 
-        for i,reg in enumerate(rangelist):
-            maplist.append((reg[0], reg[1], seg + "_" + str(i))) #numeric index makes names unique
-
-    print(maplist)
-    return sorted(maplist, key = lambda x: x[0]) # Sort all of the allocated regions by start. Allows for binary search.
-
-
-"""
-Check whether address is mapped
-addr = address to check
-maplist = data structure containing mapped regions. Obtained from above function
-returns (offset, name) where name identifies the region in maplist, and offet is the 
-offset of the address within that region. 
-If the address is not mapped, return None
-"""
-def check_pointer(addr, maplist):
-     #is val a pointer to any of our mapped regions? Binary search for correct region
-     lb = 0
-     ub = len(maplist)
-     while True:
-        med = (lb + ub) // 2
-        test = maplist[med]
-        if test[0] <= addr and addr < test[1]:
-            return addr - test[0], test[2]
-        elif lb == med:
-            return None
-        elif test[1] <= addr:
-            lb = med
-        elif addr < test[0]:
-            ub = med
+    return maplist
 
 """
 Function for dumping memory from regoins of interst. This is helpful in general 
@@ -90,104 +50,18 @@ length_lb, length_ub = constraints on the length of regions to dump. Useful in s
                       
 """
 def dump_mem(maplist, sources=None, dumpname="", length_lb = -1, length_ub = 2**30):
-    sourcelist = [x for x in maplist if x[2].split("_")[0] in sources] if sources else maplist
-    sourcelist = [x for x in sourcelist if length_lb <= x[1] - x[0] and length_ub >= x[1] - x[0]]
+    sourcelist = [reg.name for reg in maplist.regions_list if reg.end - reg.start >= length_lb and reg.end - reg.start <= length_ub]
+    if sources:
+        sourcelist = [s for s in sourcelist if s in sources]
 
-    for i,region in enumerate(sourcelist):
-        print("Dumping " + str(region) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(region[1] - region[0]))
-        print("dump memory {}.dump {} {}".format(dumpname + region[2].split("/")[-1], region[0], region[1]))
+    for i,src in enumerate(sourcelist):
+        print("Dumping " + str(src.name) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(src.end - src.start))
+        print("dump memory {}.dump {} {}".format(dumpname + src.name.split("/")[-1], src.start, src.end))
         try:
-            gdb.execute("dump memory {}.dump {} {}".format(dumpname + region[2].split("/")[-1], region[0], region[1]))
+            gdb.execute("dump memory {}.dump {} {}".format(dumpname + src.nmae.split("/")[-1], src.start, src.end))
         except:
             continue
         print("finished dump")
-
-"""
-Build the Memory Cartography graph while the program is still running in GDB
-maplist = data structure containing mapped regions, obtained from `build_maplist`
-sources = list of regions to scan for outgoing pointers. If None, scan everything
-dump = whether to dump the source regoins (useful for offline learning analyses)
-dumpame = prefix for dump files
-length_lb, length_ub = length filters on the list of sources to scan. 
-                        as in `dump_mem`, this can be useful if many sources have the
-                        same name and only some are relevant
-
-Outputs a double-dictionary data structure. memgraph[a][b] is a list of (src_offset, dst_offset)
-pairs between the regions a and b
-"""
-def build_graph(maplist, sources=None, dump=False, dumpname="", length_lb = -1, length_ub = 2**30): # sources = list of source ranges to scan, if None, scan everything, fulldump = dump all of the source regions
-    memgraph = {} # adjacency matrix, where entry [i][j] is a list of (src_offset, dst_offset) links between regions i and j
-    sourcelist = [x for x in maplist if x[2].split("_")[0] in sources] if sources else maplist
-    sourcelist = [x for x in sourcelist if length_lb <= x[1] - x[0] and length_ub >= x[1] - x[0]]
-
-    for  _, _, name_i in sourcelist:
-        memgraph[name_i] = {}
-        for _,_, name_j in maplist:
-            memgraph[name_i][name_j] = [] 
-
-    print(sourcelist)
-
-    for i,region in enumerate(sourcelist):
-        print("Scanning " + str(region) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(region[1] - region[0]))
-        if dump:
-            gdb.execute("dump memory {}.dump {} {}".format(dumpname + region[2], region[0], region[1]))
-        for addr in range(region[0], region[1], POINTER_SZ):
-            if (addr - region[0]) % ((region[1] - region[0])//10) == 0:
-                print("{}%".format(10*(addr - region[0]) / ((region[1] - region[0])//10)))
-            try:
-                val = int(gdb.execute("x/g " + str(addr), False, True).split()[-1])
-            except:
-                continue
-            dst = check_pointer(val, maplist)
-            if dst:
-                # print(dst)
-                offset, dstseg = dst
-                memgraph[region[2]][dstseg].append((addr - region[0], offset))
-    return memgraph
-
-
-"""
-Build the Memory Cartography graph offline from dump files
-maplist = data structure containing mapped regions, obtained from `build_maplist`
-sources = list of regions to scan for outgoing pointers. If None, scan everything.
-          All the sources have to have a corresponding dump file on the disk.
-dumpame = prefix for dump files (for loading them, not for saving them)
-length_lb, length_ub = length filters on the list of sources to scan. 
-
-Outputs a double-dictionary data structure. memgraph[a][b] is a list of (src_offset, dst_offset)
-pairs between the regions a and b
-"""
-def build_graph_from_dumps(maplist, sources=None, dumpname="", length_lb = -1, length_ub = 2**30):
-    memgraph = {} #adjacency matrix, where entry [i][j] is a list of (src_offset, dst_offset) links between regions i and j
-    sourcelist = [x for x in maplist if x[2].split("_")[0] in sources] if sources else maplist
-    sourcelist = [x for x in sourcelist if length_lb <= x[1] - x[0] and length_ub >= x[1] - x[0]]
-    
-    for  _, _, name_i in sourcelist:
-        memgraph[name_i] = {}
-        for _,_, name_j in maplist:
-            memgraph[name_i][name_j] = [] 
-
-    for i,region in enumerate(sourcelist):
-        # Same deal as using gdb, just read from dumps instead
-        print("Scanning " + str(region) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(region[1] - region[0]))
-
-        if os.path.exists("{}.dump".format(dumpname + region[2].split("/")[-1])):
-            with open("{}.dump".format(dumpname + region[2].split("/")[-1]), "rb") as f:
-                addr = region[0]
-                raw_mem = f.read(POINTER_SZ)
-
-                while raw_mem:
-                    val = struct.unpack("P", raw_mem)[0]
-                    dst = check_pointer(val, maplist)
-
-                    if dst:
-                        offset, dstseg = dst
-                        memgraph[region[2]][dstseg].append((addr - region[0], offset))
-
-                    raw_mem = f.read(POINTER_SZ)
-                    addr += POINTER_SZ
-
-    return memgraph
 
 
 """
@@ -205,15 +79,7 @@ numberby = how to number regions with the same name. If 0, order in /proc/maps w
 def gdb_main(pid, sources=None, online=True, name="", dump=False, llb = -1, lub=2**30, numberby=0, graph=True, psize=8, coalesce=False):
     POINTER_SZ = psize
     maplist = build_maplist(pid, numberby, coalesce)
-    if online:
-        memgraph = build_graph(maplist, sources=sources, dump=dump, dumpname=name, length_lb=llb, length_ub=lub)
-    else:
-        dump_mem(maplist, sources=sources, dumpname=name, length_lb=llb, length_ub=lub)
-        if graph:
-            memgraph = build_graph_from_dumps(maplist, sources=sources, dumpname=name, length_lb=llb, length_ub=lub)
-    if online or graph:
-        with open(name + "memgraph.pickle", "wb") as f:
-            pickle.dump(memgraph, f)
+
     with open(name + "maplist.pickle", "wb") as f2:
         pickle.dump(maplist, f2)
     gdb.execute("detach")
