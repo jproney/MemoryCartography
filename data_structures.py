@@ -7,7 +7,7 @@ import pickle
 import os
 import re
 
-Region = collections.namedtuple("start_addr", "end_addr", "name")
+Region = collections.namedtuple("start", "end", "name")
 
 class MapList:
     def __init__(self):
@@ -53,6 +53,30 @@ class MapList:
     def find_region(self, region_name):
         return self.regions_dict[region_name]
 
+    # merge adjascent regions with the same name
+    def coalesce(self):
+        self.regions_list = []
+        newdict = {}
+        for name in self.name_counter.keys():
+            sublist = []
+            for i in range(self.name_counter[name]):
+                sublist.append(self.regions_dict[name + "_{}".format(i-1)])
+            sublist.sort(self.region_compare)
+
+            newlist = [Region(start=sublist[0].start, end=sublist[0].end, name=name + "_0")]
+            i = 0
+            for reg in sublist[1:]:
+                if reg.start == newlist[-1].end:
+                    newlist[-1] = Region(newlist[-1].start, reg.end, newlist[-1].name)
+                else:
+                    i += 1
+                    newlist.append(Region(reg.start, reg.end, name + "_{}".format(i)))
+            
+            self.regions_list += newlist
+            for reg in newlist:
+                newdict[reg.name] = reg
+
+        self.regions_dict = newdict
 
 class MemoryGraph:
     # sourcelist = subset of nodelist where edges can originate

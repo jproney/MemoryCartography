@@ -10,8 +10,7 @@ import pickle
 import os
 import struct
 import data_structures
-
-POINTER_SZ = struct.calcsize("P")
+import build_graph
 
 """
 Construct list of contiguous mapped regions, their offsets, and their names
@@ -20,7 +19,7 @@ numberby = How to number the regions with the same name. If 1, will number the l
            This is useful for making sure that the same regions have the same name on each run.
            (e.g. heap_0, heap_1, and heap_2 will correspond to the same logical region beween runs)
 """
-def build_maplist(pid, numberby=0, coalesce=False):
+def build_maplist(pid, coalesce=False):
     gdb.execute("attach " + str(pid))
 
     maps = [re.split(r'\s{1,}', s)[1:] for s in gdb.execute("info proc mappings", False, True).split("\n")[4:-1]]
@@ -32,8 +31,11 @@ def build_maplist(pid, numberby=0, coalesce=False):
         if segname == "(deleted)":
             segname = segment[-2] + "_(deleted)"
 
-        region = data_structures.Region(segname, int(segment[0],16), int(segment[1],16))
+        region = data_structures.Region(int(segment[0],16), int(segment[1],16), segname)
         maplist.add_region(region)
+
+    if coalesce:
+        maplist.coalesce()
 
     return maplist
 
@@ -76,11 +78,16 @@ llb, lub = upper and lower bounds on lengths of source regions to scan
 numberby = how to number regions with the same name. If 0, order in /proc/maps will be preserved. If 1,
           they will be ordered by decreasing length.
 """
-def gdb_main(pid, sources=None, online=True, name="", dump=False, llb = -1, lub=2**30, numberby=0, graph=True, psize=8, coalesce=False):
-    POINTER_SZ = psize
-    maplist = build_maplist(pid, numberby, coalesce)
+def gdb_main(pid, sources=None, name="", llb = -1, lub=2**30, graph=True, psize=8, coalesce=False):
+    maplist = build_maplist(pid, coalesce)
+    dump_mem(maplist, sources, name, llb, lub)
 
-    with open(name + "maplist.pickle", "wb") as f2:
-        pickle.dump(maplist, f2)
+    with open(name + "maplist.pickle", "wb") as f:
+        pickle.dump(maplist, f)
+    if graph:
+        memgraph = build_graph.build_graph_from_dumps(maplist, psize, sources, name, llb, lub)
+        with open(name + "memgraph.pickle", "wb") as f2:
+            pickle.dump(memgraph, f2)
+
     gdb.execute("detach")
     gdb.execute("quit")
