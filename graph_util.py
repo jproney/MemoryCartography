@@ -84,7 +84,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     mg = pickle.load(open(args.graph, "rb"))
-    scc, edges = find_scc(mg)
+    scc, edges = find_scc(mg.adj_matrix)
     if args.region is None:
         print(scc)
     else:

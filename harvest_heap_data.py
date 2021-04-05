@@ -27,9 +27,7 @@ parser.add_argument("--pgrepuser",type=str, default="", help="owner of the sough
 parser.add_argument("--pgrepkill",type=str, default="", help="expression to pgrep when killing processes. If not specified, kills process found with pgrep")
 parser.add_argument("--killsig",type=int, default=9, help="Signal number to send for killing processes. Defaults to KILL")
 
-parser.add_argument("--online", dest='online', action='store_true', help="Whether to read pointers from memory in GDB, or to dump memory using GDB and read from the dumps")
 parser.add_argument("--nograph", dest='nograph', action='store_true', help="Don't build out the graph. Just save the maplists and dumps and build the graph later")
-parser.add_argument("--numberby",type=int, default=0, help="0 to index by process order in /proc/maps, 1 to number by descending segment size")
 
 parser.add_argument("--coalesce", dest='coalesce', action='store_true', help="combine adjacent same-named memory regions")
 parser.add_argument("--pointer_sz", type=int, default=8, help="Length of a pointer in memory being analyzed")
@@ -61,15 +59,13 @@ for i in range(args.num_repeats):
     list_string = '["{}"]'.format(args.heap_region)
 
     # dump the memory
-    os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, sources={}, online={}, name=\"{}\", dump=True, llb={}, lub={}, numberby={}, graph={}, psize={}, coalesce={})'" \
+    os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, sources={}, name=\"{}\", llb={}, lub={}, graph={}, psize={}, coalesce={})'" \
         .format(
             pid, 
             list_string, 
-            args.online,
             "{}/run{}_".format(args.outdir, i), 
             args.length_lb,
             args.length_ub,
-            args.numberby,
             not args.nograph,
             args.pointer_sz,
             args.coalesce))

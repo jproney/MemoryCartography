@@ -172,6 +172,3 @@ class RunContainer:
     # Convieniance function for getting the length of a heap
     def get_heap_size(self, heapnum):
         return self.heap_regions[heapnum].end - self.heap_regions[heapnum].start
-
-
-    

@@ -48,7 +48,7 @@ if args.dump:
             pid = child.pid
 
         # dump the memory
-        os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, name=\"{}\", online=False, dump=True, psize={}, graph={})'" \
+        os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, name=\"{}\", psize={}, graph={})'" \
             .format(
                 pid, 
                 "{}/run{}_".format(args.outdir, i), 
@@ -72,19 +72,19 @@ if not args.nograph:
         with open(args.outdir + "/run{}_".format(i) + "memgraph.pickle", "rb") as f:
             newmg = pickle.load(f)
             if mg:
-                for src in mg.keys():
-                    for dst in mg[src].keys():
+                for src in mg.ajd_matrix.keys():
+                    for dst in mg.ajd_matrix[src].keys():
                         if (src not in newmg.keys()) or (dst not in newmg[src].keys()):
-                            mg[src][dst] = []
+                            mg.ajd_matrix[src][dst] = []
                             continue
 
-                        edgelist = mg[src][dst]
+                        edgelist = mg.ajd_matrix[src][dst]
                         newmg_eset = set(newmg[src][dst])
                         newlist = []
                         for e in edgelist:
                             if e in newmg_eset:
                                 newlist.append(e)
-                        mg[src][dst] = newlist
+                        mg.ajd_matrix[src][dst] = newlist
             else:
                 mg = newmg
 
