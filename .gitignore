@@ -6,3 +6,5 @@ __pycache__/*
 test.txt
 *.swp
 *.bin
+convert.py
+.sw*
