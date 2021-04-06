@@ -1,6 +1,7 @@
 import pickle
 import data_structures
 import os
+import sys
 
 # Convert from old version to new version
 def convert_maplist(f_old):
@@ -30,3 +31,6 @@ def convert_dir(fdir):
 
         pickle.dump(mlnew, open(f1,'wb'))
         pickle.dump(mgnew, open(f2,'wb'))
+
+if __name__ == "__main__":
+    convert_dir(sys.argv[1])
