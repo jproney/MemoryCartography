@@ -113,10 +113,10 @@ for i,rd in enumerate(rundata):
         ub2 = np.clip(ub_val.max(axis=0) + (ub_val.max(axis=0) - ub_val.min(axis=0)), 0, 255)
 
     for heapnum, true_addrs in enumerate(addrs[i]):
-        for offset, mem in rd.heap_iterator(heapnum, math.ceil(args.preread / aln)*aln, aln, args.preread, args.postread):
+        for offset, mem in rd.heap_iterator(heapnum, math.ceil(args.preread / aln)*aln + aln_offset, aln, args.preread, args.postread):
             mem = np.array(mem)
             total_list[i][heapnum] += 1
-            
+
             if all(lb2 <= mem) and all(mem <= ub2): # memory matches the filter
                 if offset in true_addrs:
                     trupos_list[i][heapnum] += 1

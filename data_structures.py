@@ -161,19 +161,16 @@ class RunContainer:
     # Iterate over one of the heaps at a set offset and stride
     def heap_iterator(self, heapnum, offset, stride, preread, postread):
         h = self.heap_handles[heapnum]
-        h.seek(offset - preread)
-        prebuffer = [x for x in h.read(preread + postread - stride)]
-
         pos = offset
-        mem = h.read(stride)
-        while mem:
-            window = prebuffer + [x for x in mem]
-            yield pos, window # yield interval arround pos
 
-            prebuffer = window[stride:]
+        h.seek(pos - preread)
+        mem = h.read(preread + postread)
+        while len(mem) == preread + postread:
+            yield pos, [x for x in mem] # yield interval arround pos
 
             pos += stride
-            mem = h.read(stride)
+            h.seek(pos - preread)
+            mem = h.read(preread + postread)
 
     # Convieniance function for getting the length of a heap
     def get_heap_size(self, heapnum):
