@@ -7,7 +7,7 @@ import pickle
 import os
 import re
 
-Region = collections.namedtuple("start", "end", "name")
+Region = collections.namedtuple("Region", ["start", "end", "name"])
 
 class MapList:
     def __init__(self):
@@ -15,7 +15,6 @@ class MapList:
         self.regions_dict = {} # dictionary mapping from region name to region start/end 
         self.regions_list = [] # list of mapped regions sorted by start for fast pointer search
         self.list_sorted = True # does the list need to be sorted before searching?
-        self.region_compare = lambda x,y : x.start < y.start
     
     def add_region(self, region):
         if region.name not in self.name_counter.keys():
@@ -23,7 +22,7 @@ class MapList:
         else:
             self.name_counter[region.name] += 1
         
-        region.name = region.name + "_{}".format(self.name_counter[region.name] - 1)
+        region = Region(region.start, region.end, region.name + "_{}".format(self.name_counter[region.name] - 1))
         if len(self.regions_list) > 0 and region.start < self.regions_list[-1].start:
             self.list_sorted = False
 
@@ -33,7 +32,7 @@ class MapList:
 
     def check_pointer(self, addr):
         if not self.list_sorted:
-            self.regions_list.sort(self.region_compare)
+            self.regions_list.sort(key = lambda x,y : x.start < y.start)
 
         lb = 0
         ub = len(self.regions_list)
@@ -61,7 +60,7 @@ class MapList:
             sublist = []
             for i in range(self.name_counter[name]):
                 sublist.append(self.regions_dict[name + "_{}".format(i-1)])
-            sublist.sort(self.region_compare)
+            sublist.sort(key = lambda x,y : x.start < y.start)
 
             newlist = [Region(start=sublist[0].start, end=sublist[0].end, name=name + "_0")]
             i = 0
@@ -90,7 +89,7 @@ class MemoryGraph:
                 self.adj_matrix[s][d] = []
 
     def add_edge(self, src_region, dst_region, src_offset, dst_offset):
-        return self.adj_matrix[src_region][dst_offset].append((src_offset, dst_offset))
+        return self.adj_matrix[src_region][dst_region].append((src_offset, dst_offset))
 
     def get_outward_edges(self, src):
         return self.adj_matrix[src]
@@ -113,11 +112,11 @@ class RunContainer:
             memgraph = pickle.load(open(path + runname + "_memgraph.pickle", "rb"))
 
         if heapnames is None:
-            p = re.compile('{}_([.]*_[0-9]).dump'.format(runname))
+            p = re.compile('{}_(.*_[0-9]).dump'.format(runname))
             heapnames = [p.search(f).group(1) for f in os.listdir(path) if p.match(f)]
 
         if heap_handles is None:
-            heap_handles = [open(path + runname + h + ".dump","rb") for h in heapnames]
+            heap_handles = [open(path + runname + "_" + h + ".dump","rb") for h in heapnames]
     
         self.maplist = maplist
         self.memgraph = memgraph
@@ -135,9 +134,11 @@ class RunContainer:
     def scan_for_pointer(self, dst_region_name, offset):
         addrs = []
         for h in self.heap_regions:
+            heaplist = []
             for edge in self.memgraph.get_edges(h.name, dst_region_name):
                 if edge[1] == offset:
-                    addrs.append(edge[0])
+                    heaplist.append(edge[0])
+            addrs.append(heaplist)
 
         return addrs
 
@@ -148,24 +149,29 @@ class RunContainer:
             pointer_dict = {}
 
         for i,h in enumerate(self.heap_regions):
-            for dst in self.memgraph[h.name].keys():
-                for ptr in self.memgraph[h.name][dst]:
+            for dst in self.memgraph.adj_matrix[h.name].keys():
+                for ptr in self.memgraph.adj_matrix[h.name][dst]:
                     pointer_id = (dst, ptr[1])
                     if pointer_id not in pointer_dict:
-                        pointer_dict[pointer_id] = 0
+                        pointer_dict[pointer_id] = [0]*len(self.heap_regions)
                     pointer_dict[pointer_id][i] += 1
 
         return pointer_dict
 
     # Iterate over one of the heaps at a set offset and stride
-    def heap_iterator(self, heapnum, offset, stride):
+    def heap_iterator(self, heapnum, offset, stride, preread, postread):
         h = self.heap_handles[heapnum]
-        h.seek(offset)
-        pos = offset
+        h.seek(offset - preread)
+        prebuffer = [x for x in h.read(preread + postread - stride)]
 
+        pos = offset
         mem = h.read(stride)
         while mem:
-            yield pos, mem
+            window = prebuffer + [x for x in mem]
+            yield pos, window # yield interval arround pos
+
+            prebuffer = window[stride:]
+
             pos += stride
             mem = h.read(stride)
 

@@ -84,7 +84,7 @@ for i,rd in enumerate(rundata):
                             for a in hp if a >= args.preread and a < rd.get_heap_size(j) - args.postread]
     window_data = np.zeros([len(addrs_agg), args.preread + args.postread])
     for k, (heapnum, offset) in enumerate(addrs_agg):
-        window_data[k] = rd.read_heap_bytes(heapnum, offset)
+        window_data[k] = np.array([b for b in rd.read_heap_bytes(heapnum, offset - args.preread, args.preread + args.postread)])
     
     lbs[i] = window_data.min(axis=0)
     ubs[i] = window_data.max(axis=0)
@@ -113,9 +113,10 @@ for i,rd in enumerate(rundata):
         ub2 = np.clip(ub_val.max(axis=0) + (ub_val.max(axis=0) - ub_val.min(axis=0)), 0, 255)
 
     for heapnum, true_addrs in enumerate(addrs[i]):
-        for offset, mem in rd.heap_iterator(heapnum, math.ceil(args.preread / aln)*aln, aln):
+        for offset, mem in rd.heap_iterator(heapnum, math.ceil(args.preread / aln)*aln, aln, args.preread, args.postread):
+            mem = np.array(mem)
             total_list[i][heapnum] += 1
-
+            
             if all(lb2 <= mem) and all(mem <= ub2): # memory matches the filter
                 if offset in true_addrs:
                     trupos_list[i][heapnum] += 1
@@ -130,17 +131,17 @@ for i,rd in enumerate(rundata):
                                             sum(falsepos_list[i]), sum(total_list[i]) - sum(total_tru_list[i])))
 
 # list recording precision
-prec_list = [[t / (t + f) for t,f in zip(t_hp, f_hp)] for (t_hp, f_hp) in zip(trupos_list, falsepos_list)]
+prec_list = [[t / (t + f) if t+f > 0 else 0 for t,f in zip(t_hp, f_hp)] for (t_hp, f_hp) in zip(trupos_list, falsepos_list)]
 
-total_tps = sum([[sum(hp) for hp in run] for run in trupos_list])
-total_fps = sum([[sum(hp) for hp in run] for run in falsepos_list])
-total_tru = sum([[sum(hp) for hp in run] for run in total_tru_list])
-total = sum([[sum(hp) for hp in run] for run in total_list])
+total_tps = sum([sum(run) for run in trupos_list])
+total_fps = sum([sum(run) for run in falsepos_list])
+total_tru = sum([sum(run) for run in total_tru_list])
+total = sum([sum(run) for run in total_list])
 total_false = total - total_tru
 
 print("DESTINATION={}, OFFSET={}".format(ptr_region, ptr_offset))
 print("POINTER ALIGNMENT={}".format(aln))
 print("TOTAL TPR: {} ({}/{})".format(total_tps/total_tru, total_tps, total_tru))
-print("TOTAL TPR: {} ({}/{})".format(total_fps/total_false, total_fps, total_false))
+print("TOTAL FPR: {} ({}/{})".format(total_fps/total_false, total_fps, total_false))
 print("TOTAL PRECISION: {}".format(total_tps /(total_tps + total_fps)))
 print("AVERAGE WORST-CASE PRECISION: {}".format(sum([min(run) for run in prec_list]) / len(prec_list)))

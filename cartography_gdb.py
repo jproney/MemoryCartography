@@ -9,6 +9,10 @@ import re
 import pickle
 import os
 import struct
+import sys
+
+sys.path.append("/home/petey/Documents/Harvard/2020_21/fall/cs263/final-project/memcart")
+
 import data_structures
 import build_graph
 
@@ -52,15 +56,15 @@ length_lb, length_ub = constraints on the length of regions to dump. Useful in s
                       
 """
 def dump_mem(maplist, sources=None, dumpname="", length_lb = -1, length_ub = 2**30):
-    sourcelist = [reg.name for reg in maplist.regions_list if reg.end - reg.start >= length_lb and reg.end - reg.start <= length_ub]
+    sourcelist = [reg for reg in maplist.regions_list if reg.end - reg.start >= length_lb and reg.end - reg.start <= length_ub]
     if sources:
-        sourcelist = [s for s in sourcelist if s in sources]
+        sourcelist = [s for s in sourcelist if "_".join(s.name.split("_")[:-1]) in sources]
 
     for i,src in enumerate(sourcelist):
         print("Dumping " + str(src.name) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(src.end - src.start))
         print("dump memory {}.dump {} {}".format(dumpname + src.name.split("/")[-1], src.start, src.end))
         try:
-            gdb.execute("dump memory {}.dump {} {}".format(dumpname + src.nmae.split("/")[-1], src.start, src.end))
+            gdb.execute("dump memory {}.dump {} {}".format(dumpname + src.name.split("/")[-1], src.start, src.end))
         except:
             continue
         print("finished dump")

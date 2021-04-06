@@ -10,12 +10,11 @@ def build_graph_from_dumps(maplist, pointer_sz=8, sources=None, dumpname="", len
     nodelist = [reg.name for reg in maplist.regions_list]
     sourcelist = [reg.name for reg in maplist.regions_list if reg.end - reg.start >= length_lb and reg.end - reg.start <= length_ub]
     if sources:
-        sourcelist = [s for s in sourcelist if s in sources]
+        sourcelist = [s for s in sourcelist if "_".join(s.split("_")[:-1]) in sources]
 
     memgraph = data_structures.MemoryGraph(nodelist, sourcelist)
 
     for i,src in enumerate(sourcelist):
-        # Same deal as using gdb, just read from dumps instead
         print("Scanning " + str(src) + " ({}/{})".format(i,len(sourcelist)))
 
         if os.path.exists("{}.dump".format(dumpname + src.split("/")[-1])):
@@ -34,6 +33,7 @@ def build_graph_from_dumps(maplist, pointer_sz=8, sources=None, dumpname="", len
                     offset += pointer_sz
 
     return memgraph
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("dir", help="directory to be analyzed")
