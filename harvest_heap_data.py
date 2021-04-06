@@ -15,7 +15,7 @@ import time
 parser = argparse.ArgumentParser()
 parser.add_argument("cmd", type=str, help="the command to run and analyze as it would normally be typed into a shell")
 parser.add_argument("--outdir", type=str, default="heap_analysis_{}".format(datetime.datetime.now().strftime("%M%d%Y-%I%M")), help="directory to dump outputs")
-parser.add_argument("--num_repeats",type=int, default=5, help="Re-run the binary")
+parser.add_argument("--num_repeats",type=int, default=10, help="times to re-run the binary")
 
 parser.add_argument("--heap_region",type=str, default="[heap]", help="name of the memory region to analyze (as seen in proc/pid/maps)")
 parser.add_argument("--attach_time",type=int, default=0, help="How long (in seconds) to wait before attaching and analyzing. If 0, await user input")
@@ -58,7 +58,7 @@ for i in range(args.num_repeats):
 
     list_string = '["{}"]'.format(args.heap_region)
 
-    # dump the memory
+    # call into the gdb script to map the VMAs and scann for pointers
     os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, sources={}, name=\"{}\", llb={}, lub={}, graph={}, psize={}, coalesce={})'" \
         .format(
             pid, 

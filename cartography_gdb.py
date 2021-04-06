@@ -1,7 +1,7 @@
 """
 Map out allocated memory regions in a specificed binary.
-Example usage:
-gdb -x cartography_gdb.py -ex 'py gdb_main(5201, ["[heap]_0"])'
+Not a standalone python file -- needs to run under GDB.
+Called by harvest_heap_data.py
 """
 
 import gdb #won't work unless script is being run under a GDB process
@@ -11,21 +11,23 @@ import os
 import struct
 import sys
 
-sys.path.append("/home/petey/Documents/Harvard/2020_21/fall/cs263/final-project/memcart")
+# GDB's python interpreter needs this to locate the other files
+sys.path.append(os.path.dirname(__file__))
 
 import data_structures
 import build_graph
 
 """
-Construct list of contiguous mapped regions, their offsets, and their names
+Construct list of contiguous mapped region names, their starting virtual addresses, their end  virtual adresses
+In many cases there are multiple VMAs with the same name. To deal with this, we append indices to the region names.
+For example, if there are three regions called libc.so, they will become libc.so_0, libc.s0_1, libc.so_2
 pid = process to attach to and map
-numberby = How to number the regions with the same name. If 1, will number the largest regions 0,1,2...
-           This is useful for making sure that the same regions have the same name on each run.
-           (e.g. heap_0, heap_1, and heap_2 will correspond to the same logical region beween runs)
+coalesce = whether or not to merge adjascent VMAs that have the same name
 """
 def build_maplist(pid, coalesce=False):
     gdb.execute("attach " + str(pid))
 
+    # parse the VMA table printed by gdb
     maps = [re.split(r'\s{1,}', s)[1:] for s in gdb.execute("info proc mappings", False, True).split("\n")[4:-1]]
 
     maplist = data_structures.MapList()
@@ -35,7 +37,7 @@ def build_maplist(pid, coalesce=False):
         if segname == "(deleted)":
             segname = segment[-2] + "_(deleted)"
 
-        region = data_structures.Region(int(segment[0],16), int(segment[1],16), segname)
+        region = data_structures.Region(int(segment[0],16), int(segment[1],16), segname) # (start, end, name)
         maplist.add_region(region)
 
     if coalesce:
@@ -48,8 +50,10 @@ Function for dumping memory from regoins of interst. This is helpful in general
 becaues dumping data and then analyzing it from files is much faster than querying
 GDB every time we want to look up an address.
 maplist = data structure of mapped regions obtained from `build_maptlist`
-sources = list of names of regions to dump. If None, will dump every region in maplist
-dumpname = prefix to append to the string "[region].dump" where "region" is the region name
+sources = list of names of regions to dump. If None, will dump every region in maplist. Note that
+          the names of the sources in `sourcelist` do not include the index (i.e., they are of the 
+          form 'libc.so' instead of 'libc.so_4')
+dumpname = prefix to append to the string "[region].dump" where "[region]" is the region name
 length_lb, length_ub = constraints on the length of regions to dump. Useful in scenarios when 
                        we want to dump and analyze all regions of a certain length. This happened
                        when we wanted to find all jemalloc chunks in the firefox heap. 
@@ -62,8 +66,9 @@ def dump_mem(maplist, sources=None, dumpname="", length_lb = -1, length_ub = 2**
 
     for i,src in enumerate(sourcelist):
         print("Dumping " + str(src.name) + " ({}/{})".format(i,len(sourcelist)) + "len = {} bytes".format(src.end - src.start))
-        print("dump memory {}.dump {} {}".format(dumpname + src.name.split("/")[-1], src.start, src.end))
         try:
+            # will save dump in file dumpname + region_name, where region_name is the section of the VMA name
+            # after the last '/' character. Prevents path issues with the saved file.
             gdb.execute("dump memory {}.dump {} {}".format(dumpname + src.name.split("/")[-1], src.start, src.end))
         except:
             continue
@@ -74,13 +79,9 @@ def dump_mem(maplist, sources=None, dumpname="", length_lb = -1, length_ub = 2**
 Run the full script and save the memory graph
 pid = pid of the process to attach to
 sources = names of regions to scan for pointers. If None, all regions will be scanned
-online = whether to build the graph online in GDB (slower) or construct the graph from dumps (more space)
 name = prefix for all saved files, including pickled data structures and memory dumps
-dump = whether to save dumps of osurce regions when scan is done online. Offline scans will automatically
-       save dumps
 llb, lub = upper and lower bounds on lengths of source regions to scan
-numberby = how to number regions with the same name. If 0, order in /proc/maps will be preserved. If 1,
-          they will be ordered by decreasing length.
+coalesce = whether to aggregate adjascent regions with the same name
 """
 def gdb_main(pid, sources=None, name="", llb = -1, lub=2**30, graph=True, psize=8, coalesce=False):
     maplist = build_maplist(pid, coalesce)

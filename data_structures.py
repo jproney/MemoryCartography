@@ -7,15 +7,26 @@ import pickle
 import os
 import re
 
+"""
+Named tuple representing a VMA
+"""
 Region = collections.namedtuple("Region", ["start", "end", "name"])
 
+
+"""
+Class representing the VMAs of a process
+"""
 class MapList:
     def __init__(self):
         self.name_counter = {} # tracks number of regions a given name (so they can be renamed appropriately)
         self.regions_dict = {} # dictionary mapping from region name to region start/end 
         self.regions_list = [] # list of mapped regions sorted by start for fast pointer search
         self.list_sorted = True # does the list need to be sorted before searching?
-    
+
+    """
+    Add a new region to the MapList structure.
+    region = region to add. Should be a data_structures.Region object.
+    """
     def add_region(self, region):
         if region.name not in self.name_counter.keys():
             self.name_counter[region.name] = 1
@@ -30,10 +41,16 @@ class MapList:
         self.regions_dict[region.name] = region
         
 
+    """
+    Determines whether a virtual address falls into a region within the
+    MapList structure. If it does, return that regions as a data_structures.Region object
+    addr = virtual address to check. 
+    """
     def check_pointer(self, addr):
         if not self.list_sorted:
             self.regions_list.sort(key = lambda x,y : x.start < y.start)
 
+        # binary search for the right region
         lb = 0
         ub = len(self.regions_list)
         while True:
@@ -47,12 +64,16 @@ class MapList:
                 lb = med
             elif addr < test.start:
                 ub = med
-
-    # search for region start/end by region name
+    """
+    search for region start/end by region name
+    region_name = string name of desired region. Ex: 'lib.so_4'
+    """
     def find_region(self, region_name):
         return self.regions_dict[region_name]
 
-    # merge adjascent regions with the same name
+    """
+    merge adjascent regions with the same name
+    """
     def coalesce(self):
         self.regions_list = []
         newdict = {}
@@ -77,8 +98,16 @@ class MapList:
 
         self.regions_dict = newdict
 
+"""
+Class that represents a directed graph of pointers between memory regions
+"""
 class MemoryGraph:
-    # sourcelist = subset of nodelist where edges can originate
+
+    """
+    nodelist = list of string names of VMAs in the graph
+    sourcelist = subset of nodelist where edges can originate.  The remainder of nodes
+                 in the graphs can be sinks, but not sources 
+    """
     def __init__(self, nodelist, srclist=None):
         self.adj_matrix = {} # keys are strings, not region objects
         if srclist is None:
@@ -88,19 +117,47 @@ class MemoryGraph:
             for d in nodelist:
                 self.adj_matrix[s][d] = []
 
+    """
+    Add an edge to the graph
+    src_region = string name of source for the edge
+    dst_regoin = string name of destination for the edge
+    src_offset = integer offset of pointer within source region
+    dst_offset = integer offset of pointer destination within destination region
+    """
     def add_edge(self, src_region, dst_region, src_offset, dst_offset):
         return self.adj_matrix[src_region][dst_region].append((src_offset, dst_offset))
 
+    """
+    Get dictionary of edges leaving a particular region
+    src = string name of source regoin
+    """
     def get_outward_edges(self, src):
         return self.adj_matrix[src]
 
+    """
+    Get a list of edges between two regions
+    src = string name of source region
+    dst = string name of destination region
+    returns list of (src_offset, dst_offset) pairs
+    """
     def get_edges(self, src, dst):
         return self.adj_matrix[src][dst]
 
-# Contains all of the data structures resulting from one run of a target program
-# and utilities for analyzing the data
+"""
+Contains all of the data structures resulting from one run of a target program
+and utilities for analyzing the data
+"""
 class RunContainer:
 
+    """
+    runname = prefix for all of the files corresponding to the run. Ex: "run0"
+    heapnames = names of the heap regions. Should correspond do files of the form "run0_[region].dump" in the target directory
+                If not specified, all files of the form runname + * + '.dump' will be treated as heaps
+    path = directory containing the relevant files
+    maplist = data_structures.MapList object for the target run. If not provided, will be searched for in the target path
+    memgraph = data_structures.MemGraph object for the target run. If not provided, will be searched for in the target path
+    heap_handles = list of file handles for the heap dumps. If not provided, will be loaded from files in the target path
+    """
     def __init__(self, runname, heapnames=None, path="./", maplist=None, memgraph=None, heap_handles=None):
         self.runname = runname
         self.path = path
@@ -124,13 +181,23 @@ class RunContainer:
 
         self.heap_regions = [maplist.find_region(h) for h in heapnames]
 
+    """
+    Read bytes from a particular heap dump within the run
+    heapnum = index of the heap to read from
+    offset = file offset to read from
+    nbytes = number of bytes to read
+    """
     def read_heap_bytes(self, heapnum, offset, nbytes):
         self.heap_handles[heapnum].seek(offset)
         return self.heap_handles[heapnum].read(nbytes)
 
-    # Look for pointers to (dst_region, offset)
-    # Return a nested list containing the offsets of
-    # any such pointers for each heap regoin
+    """
+    Scan all heap dumps in this run for pointers to a particular region
+    dst_region_name = name of pointer's destination region
+    offset = offset within the destination region that the pointer reference
+    returns a nested list. Each inner list represents a heap, as contains
+    a list of offsets within the heap that contain the target pointer.
+    """
     def scan_for_pointer(self, dst_region_name, offset):
         addrs = []
         for h in self.heap_regions:
@@ -142,8 +209,16 @@ class RunContainer:
 
         return addrs
 
-    # Return a dictionary of the most frequent pointer destinations in this 
-    # run. Optionally, add the tally to an existing dictionary.
+    """
+    Return a dictionary of the most frequent pointer destinations in this 
+    run. Optionally, add the tally to an existing dictionary.
+    pointer_dict = dictionary with keys of the form (destination_name, offset).
+                   Values are lists, and each list entry is the number of occurances of 
+                   the key pointer in each of the heaps in this run. If not provided,
+                   a new dictionary of this format will be generated for the current 
+                   run, and can be passed to the `rank_most_frequent` of a different
+                   RunContainer object to tally pointer freuquencies accross runs.
+    """
     def rank_most_frequent(self, pointer_dict=None):
         if pointer_dict is None:
             pointer_dict = {}
@@ -158,7 +233,13 @@ class RunContainer:
 
         return pointer_dict
 
-    # Iterate over one of the heaps at a set offset and stride
+    """
+    Iterate over one of the heaps at a set offset and stride
+    heapnum = index of the heap to be read from
+    stride = how many bytes to shift the read offset by each iteratoin
+    preread = number of bytes to read prior to the read offset
+    postread = number of bytes ot read after the read offset
+    """
     def heap_iterator(self, heapnum, offset, stride, preread, postread):
         h = self.heap_handles[heapnum]
         pos = offset
@@ -171,7 +252,9 @@ class RunContainer:
             pos += stride
             h.seek(pos - preread)
             mem = h.read(preread + postread)
-
-    # Convieniance function for getting the length of a heap
+    """
+    Convieniance function for getting the length of a heap
+    heapnum = index of the heap in question
+    """
     def get_heap_size(self, heapnum):
         return self.heap_regions[heapnum].end - self.heap_regions[heapnum].start

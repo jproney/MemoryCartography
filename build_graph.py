@@ -5,6 +5,14 @@ import struct
 import data_structures
 
 
+"""
+Build a series of memory dumps from a process into a memory graph of pointers between regions
+maplist = data_structures.MapList object containing the VMAs of the target process
+pointer_sz = number of bytes per pointer in the memory dumpes
+sources = list of names of regions to be scanned for pointers
+length_lb = lower bound on the length of regions to be scanned for pointers
+length_ub = upper bound on the length of regions to be scanned for pointers
+"""
 def build_graph_from_dumps(maplist, pointer_sz=8, sources=None, dumpname="", length_lb = -1, length_ub = 2**30):
     
     nodelist = [reg.name for reg in maplist.regions_list]
@@ -33,7 +41,9 @@ def build_graph_from_dumps(maplist, pointer_sz=8, sources=None, dumpname="", len
                     offset += pointer_sz
 
     return memgraph
-    
+"""    
+Build a memory graph from a series of dumps files that were produced by a previous run of harvest_heap_data.py
+"""
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("dir", help="directory to be analyzed")
