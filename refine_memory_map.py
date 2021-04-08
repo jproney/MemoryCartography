@@ -1,7 +1,7 @@
 """
 Run memory cartograhy multiple times and bulid a refined memory graph
-Example: python refine_memory_map.py 'gnome-terminal -- vim' --pgrepattach vim --num_repeats 3 --pgrepkill vim --outdir vim_map
-Example Usage: python refine_memory_map.py 'firefox mozilla.org' --outdir ff_map --attach_time 15 --num_repeats 3 --pgrepattach 'Web Content' --pgrepkill 'firefox' --outidr ff_map
+Example: python refine_memory_map.py 'gnome-terminal -- vim' --pgrepattach vim --num_repeats 3 --pgrepkill vim --outdir vim_map --dump
+Example Usage: python refine_memory_map.py 'firefox mozilla.org' --outdir ff_map --attach_time 15 --num_repeats 3 --pgrepattach 'Web Content' --pgrepkill 'firefox' --outidr ff_map --dump
 """
 
 import argparse
@@ -23,7 +23,7 @@ parser.add_argument("--pgrepkill",type=str, default="", help="expression to pgre
 parser.add_argument("--pointer_sz", type=int, default=8, help="Length of a pointer in memory being analyzed")
 parser.add_argument("--nograph", dest='nograph', action='store_true', help="Don't build out the graph. Just save the maplists and dumps and build the graph later")
 parser.add_argument("--killsig",type=int, default=9, help="Signal number to send for killing processes. Defaults to KILL")
-
+parser.add_argument("--coalesce", dest='coalesce', action='store_true', help="combine adjacent same-named memory regions")
 
 args = parser.parse_args()
 
@@ -48,12 +48,13 @@ if args.dump:
             pid = child.pid
 
         # dump the memory
-        os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, name=\"{}\", psize={}, graph={})'" \
+        os.system("sudo gdb -x cartography_gdb.py -ex 'py gdb_main({}, name=\"{}\", psize={}, graph={}, coalesce={})'" \
             .format(
                 pid, 
                 "{}/run{}_".format(args.outdir, i), 
                 args.pointer_sz,
-                not args.nograph))
+                not args.nograph,
+                args.coalesce))
         
 
         # determine who to kill
@@ -72,46 +73,21 @@ if not args.nograph:
         with open(args.outdir + "/run{}_".format(i) + "memgraph.pickle", "rb") as f:
             newmg = pickle.load(f)
             if mg:
-                for src in mg.ajd_matrix.keys():
-                    for dst in mg.ajd_matrix[src].keys():
-                        if (src not in newmg.keys()) or (dst not in newmg[src].keys()):
-                            mg.ajd_matrix[src][dst] = []
+                for src in mg.adj_matrix.keys():
+                    for dst in mg.adj_matrix[src].keys():
+                        if (src not in newmg.adj_matrix.keys()) or (dst not in newmg.adj_matrix[src].keys()):
+                            mg.adj_matrix[src][dst] = [] # remove inconcsistent edges
                             continue
 
-                        edgelist = mg.ajd_matrix[src][dst]
-                        newmg_eset = set(newmg[src][dst])
+                        edgelist = mg.adj_matrix[src][dst]
+                        newmg_eset = set(newmg.adj_matrix[src][dst])
                         newlist = []
                         for e in edgelist:
                             if e in newmg_eset:
                                 newlist.append(e)
-                        mg.ajd_matrix[src][dst] = newlist
+                        mg.adj_matrix[src][dst] = newlist
             else:
                 mg = newmg
-
-    # Add edges between regions with the same name that are always adjacent
-
-    maplists = [pickle.load(open(args.outdir + "/run{}_".format(i) + "maplist.pickle", "rb")) for i in range(args.num_repeats)]
-
-    mapdicts = [] # List of dictionaries, one for each run. Dictionaries simply map a region name to its start and end for more convenient retrieval.
-    for i in range(args.num_repeats):
-        md = {}
-        for reg in maplists[i]:
-            md[reg[2]] = (reg[0], reg[1])
-        mapdicts.append(md)
-
-
-    for src in mg.keys():
-        if any([src not in md for md in mapdicts]):
-            continue
-
-        for dst in mg[src].keys():
-            pref1 = "_".join(src.split("_")[:-1])
-            pref2 = "_".join(dst.split("_")[:-1])
-            if any([dst not in md for md in mapdicts]) or len(pref1) == 0 or len(pref2) == 0 or pref1 != pref2:
-                continue
-
-            if all([md[dst][1] == md[src][0] for md in mapdicts]) or all([md[dst][0] == md[src][1] for md in mapdicts]) :
-                mg[src][dst].append((0,0)) # Virtual edge represents consistent spatial adjasency
 
     with open(args.outdir + "/memgraph_final.pickle", "wb") as f:
         pickle.dump(mg, f)

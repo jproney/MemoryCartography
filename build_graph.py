@@ -41,6 +41,7 @@ def build_graph_from_dumps(maplist, pointer_sz=8, sources=None, dumpname="", len
                     offset += pointer_sz
 
     return memgraph
+    
 """    
 Build a memory graph from a series of dumps files that were produced by a previous run of harvest_heap_data.py
 """

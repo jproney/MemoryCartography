@@ -7,8 +7,9 @@ import argparse
 
 """
 Find strongly connected components in the memory graph
-graph is a double-dictionary, like the kind in the file
-memgraph_final.pickle produced by `refine_memory_map.py` 
+graph is a double-dictionary, like the kind contained 
+in the `adj_matrix` field of a data_structures.MemGraph
+object. 
 """
 def find_scc(graph):
     grev = {} #reverse graph
