@@ -8,3 +8,4 @@ test.txt
 *.bin
 convert.py
 .sw*
+ds_analysis/*

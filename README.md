@@ -1,14 +1,24 @@
-# Final Project on Memory Cartography
+# Code from the Paper "Identifying Valuable Pointer in Heap Data" from WOOT 2021
 
-This repository contains tools for performing memory cartography attacks and discovering pointers to 
-data sections inside unstructured heap data.
+This repository contains tools for performing memory cartography attacks and discovering pointers to data sections inside unstructured heap data.
+
+Tested and working with the following environment(s):
+
+* Python 3.8.5
+* GDB 9.2
+* Ubuntu 20.04, Ubuntu 18.04, Ubuntu 12.04
+
+Python Dependencies:
+
+* numpy
+* selenium (for simulating realistic web server traffic, not required for memory analysis)
 
 
-Steps to reproduce results from the paper.
+Steps to reproduce results from the paper:
 
 1. Vim
 
-To reproduce the results of the paper on the Vim text editor, run:
+To reproduce the results of the paper on the Vim text editor (tested on Vim 8.1.2269), run:
 
 python harvest_heap_data.py 'gnome-terminal -- vim' --pgrepattach vim --num_repeats 10 --pgrepkill vim --outdir vim_heap_analysis
 
@@ -18,6 +28,8 @@ original terminal to begin harvesting the data. This cycle will repeat 10 times.
 Now to analyze the results of the memory dumps run:
 
 python analyze.py vim_heap_analysis/ --rank 0
+
+Substitute other numbers into the "rank" field to explore other discovered pointers.
 
 To build the memory cartography graph on Vim run:
 
@@ -31,7 +43,7 @@ Note: An unpleasant sideaffect is the abundance of .sw* files produced. Do rm .s
 
 2. Firefox
 
-To reproduce the results on Firefox, run:
+To reproduce the results on Firefox (tested on Firefox 87.0), run:
 
 python harvest_heap_data.py 'firefox mozilla.org' --outdir ff_heap --attach_time 15 --num_repeats 10 --pgrepattach 'Web Content' --pgrepkill 'firefox' --heap_region '' --length_lb 1048576 --length_ub 1048576
 
