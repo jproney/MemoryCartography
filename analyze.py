@@ -44,6 +44,8 @@ for rd in rundata:
 pointerlist = [(ptr, pointer_dict[ptr]) for ptr in pointer_dict.keys()]
 pointerlist.sort(key=lambda x: x[1], reverse=True)
 
+print(pointerlist[:10])
+
 # get the region and offset of the destination the user is interested in
 ptr_region, ptr_offset = pointerlist[args.rank][0]
 
@@ -52,6 +54,8 @@ ptr_region, ptr_offset = pointerlist[args.rank][0]
 addrs = []
 for rd in rundata:
     addrs.append(rd.scan_for_pointer(ptr_region, ptr_offset))
+
+print([sum([len(heap) for heap in run]) for run in addrs])
 
 min_freq = min([sum([len(heap) for heap in run]) for run in addrs])
 

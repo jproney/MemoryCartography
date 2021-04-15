@@ -223,13 +223,13 @@ class RunContainer:
         if pointer_dict is None:
             pointer_dict = {}
 
-        for i,h in enumerate(self.heap_regions):
+        for h in self.heap_regions:
             for dst in self.memgraph.adj_matrix[h.name].keys():
                 for ptr in self.memgraph.adj_matrix[h.name][dst]:
                     pointer_id = (dst, ptr[1])
                     if pointer_id not in pointer_dict:
-                        pointer_dict[pointer_id] = [0]*len(self.heap_regions)
-                    pointer_dict[pointer_id][i] += 1
+                        pointer_dict[pointer_id] = 0
+                    pointer_dict[pointer_id] += 1
 
         return pointer_dict
 
