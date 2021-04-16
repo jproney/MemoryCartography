@@ -61,9 +61,18 @@ python graph_util.py ff_map/memgraph_final.pickle --region /usr/lib/firefox/libx
 
 3. Apache + Heartbleed
 
-First, get the Apache wordpress server running on the Heartbleed VM. (Make sure to do /etc/init.d/nginx stop)
+For our attack on Apache, we used an Ubuntu 12.04 VM with OpenSSL 1.0.1, which is vulnerable to Heartbleed. The Virtualbox VM image we used is avaiable ![here], and was based off of the image found ![here][http://pages.cs.wisc.edu/~rist/642-spring-2014/hw/hwEC.html] (credit to Thomas Ristenpart). 
 
-Heartbleed leaks from labelled heap in single-process Apache ([heap]_1).  To run memory cartography, execute the following from /home/user/Documents/MemoryCartography in the VM:
+To log into the VM image, select the account called "heartbleed" and enter the password "heartbleed."
+
+Alternatively, you can start the VM in headless mode, and log in by executing ssh -A user@192.168.26.3 and entering the password "heartbleed."
+
+First, get the Apache server running on the Heartbleed VM. (Make sure to do `sudo /etc/init.d/nginx stop` and `sudo /etc/init.d/apache2 restart`)
+
+If the server is running, you should be able to access a simple wordpress site at `192.168.26.3:443`. To make sure that heartbleed is working, try running `nmap -p 443 --script sll-heartbleed 192.168.26.3` from the host machine.
+
+
+Heartbleed leaks from a specific labelled heap in single-process Apache ([heap]_1).  To run memory cartography, execute the following from /home/user/Documents/MemoryCartography in the VM:
 
 python3 harvest_heap_data.py 'sudo /etc/init.d/apache2 stop; sleep 2; sudo /etc/init.d/apache2 start; echo "done!"' --outdir apache_heap --attach_time 0 --num_repeats 10 --pgrepattach 'apache' --pgrepuser 'www-data' --pgrepkill 'apache' --killsig 0 --nograph
 
