@@ -37,7 +37,7 @@ python refine_memory_map.py 'gnome-terminal -- vim' --pgrepattach vim --num_repe
 
 To determine the number of regions reachable from the region vim.basic_4, run
 
-python graph_util.py vim_map/memgraph_final.pickle --region /usr/bin/vim.basic_4
+python graph_util.py vim_map/memgraph_final.json --region /usr/bin/vim.basic_4
 
 Note: An unpleasant sideaffect is the abundance of .sw* files produced. Do rm .sw* to get rid of these once you're done.
 
@@ -57,7 +57,7 @@ python refine_memory_map.py 'firefox mozilla.org' --outdir ff_map --attach_time 
 
 To determine the connectivity of libxul.so.2 run:
 
-python graph_util.py ff_map/memgraph_final.pickle --region /usr/lib/firefox/libxul.so_2
+python graph_util.py ff_map/memgraph_final.json --region /usr/lib/firefox/libxul.so_2
 
 3. Apache + Heartbleed
 
@@ -106,4 +106,4 @@ python3 refine_memory_map.py '' --outdir apache_map --num_repeats 3
 
 And analyze connectivity:
 
-python graph_util.py apache_map/memgraph_final.pickle --region /usr/lib/apache2/modules/libphp5.so_0
+python graph_util.py apache_map/memgraph_final.json --region /usr/lib/apache2/modules/libphp5.so_0

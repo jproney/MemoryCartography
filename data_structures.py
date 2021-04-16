@@ -3,7 +3,6 @@ Useful Data Structures for memory cartography analyses
 """
 
 import collections
-import pickle
 import os
 import re
 import json
@@ -211,10 +210,12 @@ class RunContainer:
         self.path = path
 
         if maplist is None:
-            maplist = pickle.load(open(path + runname + "_maplist.pickle", "rb"))
+            maplist = MapList()
+            maplist.deserialize(path + runname + "_maplist.json")
 
         if memgraph is None:
-            memgraph = pickle.load(open(path + runname + "_memgraph.pickle", "rb"))
+            memgraph = MemoryGraph()
+            memgraph.deserialize(path + runname + "_memgraph.json")
 
         if heapnames is None:
             p = re.compile('{}_(.*_[0-9]*).dump'.format(runname))

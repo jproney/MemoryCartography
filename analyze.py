@@ -27,7 +27,7 @@ parser.add_argument("--save", dest='save', action='store_true', help="Save the f
 parser.add_argument("--nohold", action='store_true', help="Don't hold out and just look at training set accuracy (sanity check, TPRs should be 1.0)")
 args = parser.parse_args()
 
-runnames = sorted([f.split("_")[0] for f in os.listdir(args.dir) if f.endswith("maplist.pickle")])
+runnames = sorted([f.split("_")[0] for f in os.listdir(args.dir) if f.endswith("maplist.json")])
 rundata = []
 
 for rn in runnames:

@@ -7,7 +7,6 @@ See parser for input arguments. Reuslt files will be saved to "outdir," and can 
 
 import argparse
 import os
-import pickle
 import datetime
 import subprocess
 import time

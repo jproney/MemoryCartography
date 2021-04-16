@@ -1,5 +1,4 @@
 import os
-import pickle
 import argparse
 import struct
 import data_structures
@@ -54,8 +53,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    ml = [pickle.load(open("{}/run{}_maplist.pickle".format(args.dir, i), "rb")) for i in range(args.n)]
+    ml = [data_structures.MapList().deserialize("{}/run{}_maplist.json".format(args.dir, i)) for i in range(args.n)]
     mg = [build_graph_from_dumps(ml[i], pointer_sz=args.pointer_sz, sources= args.sources if len(args.sources) > 0 else None, dumpname="{}/run{}_".format(args.dir, i)) for i in range(args.n)]
 
     for i in range(args.n):
-        pickle.dump(mg[i], open("{}/run{}_memgraph.pickle".format(args.dir, i), "wb"))
+        mg[i].serialize("{}/run{}_memgraph.json".format(args.dir, i))

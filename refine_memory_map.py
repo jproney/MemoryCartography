@@ -4,9 +4,9 @@ Example: python refine_memory_map.py 'gnome-terminal -- vim' --pgrepattach vim -
 Example Usage: python refine_memory_map.py 'firefox mozilla.org' --outdir ff_map --attach_time 15 --num_repeats 3 --pgrepattach 'Web Content' --pgrepkill 'firefox' --outidr ff_map --dump
 """
 
+import data_structures
 import argparse
 import os
-import pickle
 import datetime
 import subprocess
 import time
@@ -70,24 +70,23 @@ if not args.nograph:
     #refine the memory graph
     mg = None
     for i in range(args.num_repeats):
-        with open(args.outdir + "/run{}_".format(i) + "memgraph.pickle", "rb") as f:
-            newmg = pickle.load(f)
-            if mg:
-                for src in mg.adj_matrix.keys():
-                    for dst in mg.adj_matrix[src].keys():
-                        if (src not in newmg.adj_matrix.keys()) or (dst not in newmg.adj_matrix[src].keys()):
-                            mg.adj_matrix[src][dst] = [] # remove inconcsistent edges
-                            continue
+        newmg = data_structures.MemoryGraph()
+        newmg.deserialize(args.outdir + "/run{}_".format(i) + "memgraph.json")
+        if mg:
+            for src in mg.adj_matrix.keys():
+                for dst in mg.adj_matrix[src].keys():
+                    if (src not in newmg.adj_matrix.keys()) or (dst not in newmg.adj_matrix[src].keys()):
+                        mg.adj_matrix[src][dst] = [] # remove inconcsistent edges
+                        continue
 
-                        edgelist = mg.adj_matrix[src][dst]
-                        newmg_eset = set(newmg.adj_matrix[src][dst])
-                        newlist = []
-                        for e in edgelist:
-                            if e in newmg_eset:
-                                newlist.append(e)
-                        mg.adj_matrix[src][dst] = newlist
+                    edgelist = mg.adj_matrix[src][dst]
+                    newmg_eset = set(newmg.adj_matrix[src][dst])
+                    newlist = []
+                    for e in edgelist:
+                        if e in newmg_eset:
+                            newlist.append(e)
+                    mg.adj_matrix[src][dst] = newlist
             else:
                 mg = newmg
 
-    with open(args.outdir + "/memgraph_final.pickle", "wb") as f:
-        pickle.dump(mg, f)
+    mg.serialize(args.outdir + "/memgraph_final.json")

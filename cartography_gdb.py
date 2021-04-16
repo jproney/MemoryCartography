@@ -6,7 +6,6 @@ Called by harvest_heap_data.py
 
 import gdb #won't work unless script is being run under a GDB process
 import re
-import pickle
 import os
 import struct
 import sys
@@ -79,7 +78,7 @@ def dump_mem(maplist, sources=None, dumpname="", length_lb = -1, length_ub = 2**
 Run the full script and save the memory graph
 pid = pid of the process to attach to
 sources = names of regions to scan for pointers. If None, all regions will be scanned
-name = prefix for all saved files, including pickled data structures and memory dumps
+name = prefix for all saved files, including serialized data structures and memory dumps
 llb, lub = upper and lower bounds on lengths of source regions to scan
 coalesce = whether to aggregate adjascent regions with the same name
 """
@@ -87,12 +86,10 @@ def gdb_main(pid, sources=None, name="", llb = -1, lub=2**30, graph=True, psize=
     maplist = build_maplist(pid, coalesce)
     dump_mem(maplist, sources, name, llb, lub)
 
-    with open(name + "maplist.pickle", "wb") as f:
-        pickle.dump(maplist, f)
+    maplist.serialize(name + "maplist.json")
     if graph:
         memgraph = build_graph.build_graph_from_dumps(maplist, psize, sources, name, llb, lub)
-        with open(name + "memgraph.pickle", "wb") as f2:
-            pickle.dump(memgraph, f2)
+        memgraph.serialize(name + "memgraph.json")
 
     gdb.execute("detach")
     gdb.execute("quit")

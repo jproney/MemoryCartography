@@ -2,7 +2,7 @@
 Graph algorithms for analyzing the memory map
 """
 
-import pickle
+import data_structures
 import argparse
 
 """
@@ -76,7 +76,7 @@ def simple_dfs(edgelist, src):
     return visited
 
 """
-Example Usage: python graph_util.py vim_map/memgraph_final.pickle --region /usr/bin/vim.basic_4
+Example Usage: python graph_util.py vim_map/memgraph_final.json --region /usr/bin/vim.basic_4
 """
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -84,7 +84,8 @@ if __name__ == "__main__":
     parser.add_argument("--region", default=None, help="region of interest")
     args = parser.parse_args()
 
-    mg = pickle.load(open(args.graph, "rb"))
+    mg = data_structures.MemoryGraph()
+    mg.deserialize(args.graph)
     scc, edges = find_scc(mg.adj_matrix)
     if args.region is None:
         print(scc)
