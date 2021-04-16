@@ -17,11 +17,14 @@ Region = collections.namedtuple("Region", ["start", "end", "name"])
 Class representing the VMAs of a process
 """
 class MapList:
-    def __init__(self):
+    def __init__(self, load_file=None):
         self.name_counter = {} # tracks number of regions a given name (so they can be renamed appropriately)
         self.regions_dict = {} # dictionary mapping from region name to region start/end 
         self.regions_list = [] # list of mapped regions sorted by start for fast pointer search
         self.list_sorted = True # does the list need to be sorted before searching?
+
+        if load_file:
+            self.deserialize(load_file)
 
     """
     Add a new region to the MapList structure.
@@ -135,15 +138,19 @@ class MemoryGraph:
     nodelist = list of string names of VMAs in the graph
     sourcelist = subset of nodelist where edges can originate.  The remainder of nodes
                  in the graphs can be sinks, but not sources 
+    load_file = json file to deserialize the object data from
     """
-    def __init__(self, nodelist=[], srclist=None):
+    def __init__(self, nodelist=[], srclist=None, load_file=None):
         self.adj_matrix = {} # keys are strings, not region objects
-        if srclist is None:
-            srclist = nodelist
-        for s in srclist:
-            self.adj_matrix[s] = {}
-            for d in nodelist:
-                self.adj_matrix[s][d] = []
+        if load_file:
+            self.deserialize(load_file)
+        else:
+            if srclist is None:
+                srclist = nodelist
+            for s in srclist:
+                self.adj_matrix[s] = {}
+                for d in nodelist:
+                    self.adj_matrix[s][d] = []
 
     """
     Add an edge to the graph
@@ -210,12 +217,10 @@ class RunContainer:
         self.path = path
 
         if maplist is None:
-            maplist = MapList()
-            maplist.deserialize(path + runname + "_maplist.json")
+            maplist = MapList(load_file=path + runname + "_maplist.json")
 
         if memgraph is None:
-            memgraph = MemoryGraph()
-            memgraph.deserialize(path + runname + "_memgraph.json")
+            memgraph = MemoryGraph(load_file=path + runname + "_memgraph.json")
 
         if heapnames is None:
             p = re.compile('{}_(.*_[0-9]*).dump'.format(runname))

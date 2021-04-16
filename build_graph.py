@@ -53,7 +53,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    ml = [data_structures.MapList().deserialize("{}/run{}_maplist.json".format(args.dir, i)) for i in range(args.n)]
+    ml = [data_structures.MapList(load_file = "{}/run{}_maplist.json".format(args.dir, i)) for i in range(args.n)]
     mg = [build_graph_from_dumps(ml[i], pointer_sz=args.pointer_sz, sources= args.sources if len(args.sources) > 0 else None, dumpname="{}/run{}_".format(args.dir, i)) for i in range(args.n)]
 
     for i in range(args.n):

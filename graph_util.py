@@ -84,8 +84,7 @@ if __name__ == "__main__":
     parser.add_argument("--region", default=None, help="region of interest")
     args = parser.parse_args()
 
-    mg = data_structures.MemoryGraph()
-    mg.deserialize(args.graph)
+    mg = data_structures.MemoryGraph(load_file=args.graph)
     scc, edges = find_scc(mg.adj_matrix)
     if args.region is None:
         print(scc)

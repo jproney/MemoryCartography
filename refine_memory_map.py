@@ -70,8 +70,7 @@ if not args.nograph:
     #refine the memory graph
     mg = None
     for i in range(args.num_repeats):
-        newmg = data_structures.MemoryGraph()
-        newmg.deserialize(args.outdir + "/run{}_".format(i) + "memgraph.json")
+        newmg = data_structures.MemoryGraph(load_file=args.outdir + "/run{}_".format(i) + "memgraph.json")
         if mg:
             for src in mg.adj_matrix.keys():
                 for dst in mg.adj_matrix[src].keys():
