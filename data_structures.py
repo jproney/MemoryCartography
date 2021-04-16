@@ -169,7 +169,7 @@ class RunContainer:
             memgraph = pickle.load(open(path + runname + "_memgraph.pickle", "rb"))
 
         if heapnames is None:
-            p = re.compile('{}_(.*_[0-9]).dump'.format(runname))
+            p = re.compile('{}_(.*_[0-9]*).dump'.format(runname))
             heapnames = [p.search(f).group(1) for f in os.listdir(path) if p.match(f)]
 
         if heap_handles is None:

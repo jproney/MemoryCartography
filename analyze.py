@@ -29,7 +29,7 @@ parser.add_argument("--print_offsets", action='store_true', help="print the offs
 parser.add_argument("--nohold", action='store_true', help="Don't hold out and just look at training set accuracy (sanity check, TPRs should be 1.0)")
 args = parser.parse_args()
 
-runnames = [f.split("_")[0] for f in os.listdir(args.dir) if f.endswith("maplist.pickle")]
+runnames = sorted([f.split("_")[0] for f in os.listdir(args.dir) if f.endswith("maplist.pickle")])
 rundata = []
 
 for rn in runnames:
@@ -43,8 +43,6 @@ for rd in rundata:
 # Sort by frequency and extract the appropriate rank
 pointerlist = [(ptr, pointer_dict[ptr]) for ptr in pointer_dict.keys()]
 pointerlist.sort(key=lambda x: x[1], reverse=True)
-
-print(pointerlist[:10])
 
 # get the region and offset of the destination the user is interested in
 ptr_region, ptr_offset = pointerlist[args.rank][0]
