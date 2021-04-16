@@ -22,10 +22,8 @@ parser.add_argument("--rank", type=int, default=0, help="An integer representing
 parser.add_argument("--preread", type=int, default=32, help="Number of window bytes before pointer address")
 parser.add_argument("--postread", type=int, default=32, help="Number of window bytes after pointer address")
 parser.add_argument("--pointer_sz", type=int, default=8, help="Length of a pointer in memory being analyzed")
-parser.add_argument("--exclude_src", nargs="+", default=[], help="Heap regions to exclude from analysis")
-parser.add_argument("--exclude_dst", nargs="+", default=[], help="Exclude these pointer destinations")
+parser.add_argument("--heapnames", nargs="+", default=None, help="Names of heap regions to analyze (e.g. [heap]_1)")
 parser.add_argument("--save", dest='save', action='store_true', help="Save the filter bounds")
-parser.add_argument("--print_offsets", action='store_true', help="print the offsets of the pointers")
 parser.add_argument("--nohold", action='store_true', help="Don't hold out and just look at training set accuracy (sanity check, TPRs should be 1.0)")
 args = parser.parse_args()
 
@@ -33,7 +31,7 @@ runnames = sorted([f.split("_")[0] for f in os.listdir(args.dir) if f.endswith("
 rundata = []
 
 for rn in runnames:
-    rundata.append(RunContainer(rn, path=args.dir))
+    rundata.append(RunContainer(rn, path=args.dir, heapnames = args.heapnames))
 
 # Tally the most frequent pointers
 pointer_dict = {}

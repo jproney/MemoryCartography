@@ -76,7 +76,7 @@ Heartbleed leaks from a specific labelled heap in single-process Apache ([heap]_
 
 python3 harvest_heap_data.py 'sudo /etc/init.d/apache2 stop; sleep 2; sudo /etc/init.d/apache2 start; echo "done!"' --outdir apache_heap --attach_time 0 --num_repeats 10 --pgrepattach 'apache' --pgrepuser 'www-data' --pgrepkill 'apache' --killsig 0 --nograph
 
-During each round of memory analysis, run "python wordpress.py" from the host machine to activate the stress test.
+After the server starts, run `python wordpress.py` from the host machine to activate the stress test. After the stress test finished running, press any key in the VM terminal to trigger memory analysis. This cycle will repeat 10 times.
 
 Copy the memory dumps from the VM to the host:
 
