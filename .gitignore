@@ -10,3 +10,4 @@ convert.py
 .sw*
 ds_analysis/*
 *.log
+*.json

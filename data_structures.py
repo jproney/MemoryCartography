@@ -6,6 +6,7 @@ import collections
 import pickle
 import os
 import re
+import json
 
 """
 Named tuple representing a VMA
@@ -98,6 +99,34 @@ class MapList:
 
         self.regions_dict = newdict
 
+
+    """
+    serialize the MapList into a JSON file 
+    """
+    def serialize(self, filename):
+        with open(filename, "w") as f:
+            f.write(json.dumps(self.regions_list))
+    
+    """
+    Load serialized MapList from filename
+    """
+    def deserialize(self, filename):
+        with open(filename, "r") as f:
+            rlist = json.loads(f.read())
+            self.regions_list = []
+            self.regions_dict = {}
+            self.name_counter = {}
+            for r in rlist:
+                start = r[0]
+                end = r[1]
+                name = r[2]
+                self.regions_dict[name] = Region(start, end, name)
+                self.regions_list.append(Region(start, end, name))
+                prefix  = "_".join(name.split("_")[:-1])
+                if prefix in self.name_counter:
+                    self.name_counter[prefix] += 1
+                else:
+                    self.name_counter[prefix] = 1
 """
 Class that represents a directed graph of pointers between memory regions
 """
@@ -108,7 +137,7 @@ class MemoryGraph:
     sourcelist = subset of nodelist where edges can originate.  The remainder of nodes
                  in the graphs can be sinks, but not sources 
     """
-    def __init__(self, nodelist, srclist=None):
+    def __init__(self, nodelist=[], srclist=None):
         self.adj_matrix = {} # keys are strings, not region objects
         if srclist is None:
             srclist = nodelist
@@ -142,6 +171,25 @@ class MemoryGraph:
     """
     def get_edges(self, src, dst):
         return self.adj_matrix[src][dst]
+
+    """
+    serialize the MemoryGraph into a JSON file 
+    """
+    def serialize(self, filename):
+        with open(filename, "w") as f:
+            f.write(json.dumps(self.adj_matrix))
+
+    
+    """
+    Load serialized MemoryGraph from filename
+    """
+    def deserialize(self, filename):
+        with open(filename, "r") as f:
+            self.adj_matrix = json.loads(f.read())
+        for src in self.adj_matrix.keys():
+            for dst in self.adj_matrix[src].keys():
+                elist = self.adj_matrix[src][dst]
+                self.adj_matrix[src][dst] = [tuple(e) for e in elist]
 
 """
 Contains all of the data structures resulting from one run of a target program
