@@ -2,13 +2,14 @@
 Graph algorithms for analyzing the memory map
 """
 
-import pickle
+import data_structures
 import argparse
 
 """
 Find strongly connected components in the memory graph
-graph is a double-dictionary, like the kind in the file
-memgraph_final.pickle produced by `refine_memory_map.py` 
+graph is a double-dictionary, like the kind contained 
+in the `adj_matrix` field of a data_structures.MemGraph
+object. 
 """
 def find_scc(graph):
     grev = {} #reverse graph
@@ -75,7 +76,7 @@ def simple_dfs(edgelist, src):
     return visited
 
 """
-Example Usage: python graph_util.py vim_map/memgraph_final.pickle --region /usr/bin/vim.basic_4
+Example Usage: python graph_util.py vim_map/memgraph_final.json --region /usr/bin/vim.basic_4
 """
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -83,8 +84,8 @@ if __name__ == "__main__":
     parser.add_argument("--region", default=None, help="region of interest")
     args = parser.parse_args()
 
-    mg = pickle.load(open(args.graph, "rb"))
-    scc, edges = find_scc(mg)
+    mg = data_structures.MemoryGraph(load_file=args.graph)
+    scc, edges = find_scc(mg.adj_matrix)
     if args.region is None:
         print(scc)
     else:

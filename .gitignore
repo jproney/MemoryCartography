@@ -6,3 +6,8 @@ __pycache__/*
 test.txt
 *.swp
 *.bin
+convert.py
+.sw*
+ds_analysis/*
+*.log
+*.json

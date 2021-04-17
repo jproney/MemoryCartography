@@ -8,6 +8,7 @@ from webdriver_manager.firefox import GeckoDriverManager
 import string
 import random
 import time
+import os
 
 from multiprocessing import Process
 
@@ -102,8 +103,7 @@ def loggedin_stress(driver):
 
 
 def test_loop(parity = 0):
-  # Install driver on the fly to avoid needing to configure path
-  driver = webdriver.Firefox(executable_path="/home/petey/.wdm/drivers/geckodriver/linux64/v0.29.0/geckodriver") #executable_path=GeckoDriverManager().install())
+  driver = webdriver.Firefox(executable_path=os.path.expanduser("~/.wdm/drivers/geckodriver/linux64/v0.29.0/geckodriver"))
 
   for i in range(0, iters):
     if parity == 0:
