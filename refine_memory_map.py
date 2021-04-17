@@ -74,7 +74,7 @@ if not args.nograph:
         if mg:
             for src in mg.adj_matrix.keys():
                 for dst in mg.adj_matrix[src].keys():
-                    if (src not in newmg.adj_matrix.keys()) or (dst not in newmg.adj_matrix[src].keys()):
+                    if (src not in newmg.adj_matrix) or (dst not in newmg.adj_matrix[src]):
                         mg.adj_matrix[src][dst] = [] # remove inconcsistent edges
                         continue
 
@@ -85,7 +85,33 @@ if not args.nograph:
                         if e in newmg_eset:
                             newlist.append(e)
                     mg.adj_matrix[src][dst] = newlist
-            else:
-                mg = newmg
+        else:
+            mg = newmg
+
+
+
+    # Increase map connectivity by adding links between regions 
+    # with the same name that are always direclty adjascent.
+    # Unnecessary if the maplists were already coalesced
+
+    if not args.coalesce:
+        mlists = [data_structures.MapList(load_file=args.outdir + "/run{}_".format(i) + "maplist.json")
+                for i in range(args.num_repeats)]
+        
+        for src in mg.adj_matrix.keys():
+            if any([src not in ml.regions_dict for ml in mlists]):
+                continue
+
+            for dst in mg.adj_matrix[src].keys():
+                if ("_".join(src.split("_")[:-1]) != "_".join(dst.split("_")[:-1]) 
+                    or len(mg.adj_matrix[src][dst]) > 0 or any([dst not in ml.regions_dict for ml in mlists])): 
+                    continue
+
+                src_bounds = [x.regions_dict[src] for x in mlists]
+                dst_bounds = [x.regions_dict[dst] for x in mlists]
+                if (all([s.end == d.start for (s,d) in zip(src_bounds, dst_bounds)]) or 
+                    all([s.start == d.end for (s,d) in zip(src_bounds, dst_bounds)])):
+
+                    mg.adj_matrix[src][dst].append((-1,-1)) #placeholder edge
 
     mg.serialize(args.outdir + "/memgraph_final.json")

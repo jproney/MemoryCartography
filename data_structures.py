@@ -51,7 +51,8 @@ class MapList:
     """
     def check_pointer(self, addr):
         if not self.list_sorted:
-            self.regions_list.sort(key = lambda x,y : x.start < y.start)
+            self.regions_list.sort(key = lambda x : x.start)
+            self.list_sorted = True
 
         # binary search for the right region
         lb = 0
@@ -81,10 +82,9 @@ class MapList:
         self.regions_list = []
         newdict = {}
         for name in self.name_counter.keys():
-            sublist = []
-            for i in range(self.name_counter[name]):
-                sublist.append(self.regions_dict[name + "_{}".format(i-1)])
-            sublist.sort(key = lambda x,y : x.start < y.start)
+            sublist = [self.regions_dict[name + "_{}".format(i)] for i in range(self.name_counter[name])]
+
+            sublist.sort(key = lambda x : x.start)
 
             newlist = [Region(start=sublist[0].start, end=sublist[0].end, name=name + "_0")]
             i = 0
