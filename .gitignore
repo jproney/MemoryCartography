@@ -11,3 +11,4 @@ convert.py
 ds_analysis/*
 *.log
 *.json
+*.pyc
