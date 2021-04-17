@@ -84,11 +84,11 @@ scp -r user@192.168.26.3:/home/user/Documents/MemoryCartography/apache_heap ./
 
 Next, build the memory graphs offline:
 
-python offline_graph.py apache_heap/ --n 10 --pointer_sz 4
+python build_graph.py apache_heap/ --n 10 --pointer_sz 4
 
 And analyze:
 
-python analyze.py apache_heap/ --rank 0 --exclude_src [heap]_2 [heap]_0 --pointer_sz 4
+python analyze.py apache_heap/ --rank 0 --heapnames [heap]_1 --pointer_sz 4
 
 Back on the VM, run the following to build the full memory graph. Like before, running "python wordpress.py" on the host once each iteration.
 
@@ -100,7 +100,7 @@ scp -r user@192.168.26.3:/home/user/Documents/MemoryCartography/apache_map ./
 
 Build the graph:
 
-python offline_graph.py apache_map/ --n 3 --pointer_sz 4
+python build_graph.py apache_map/ --n 3 --pointer_sz 4
 
 python3 refine_memory_map.py '' --outdir apache_map --num_repeats 3
 
