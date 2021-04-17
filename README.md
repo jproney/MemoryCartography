@@ -1,5 +1,7 @@
 # Code from the Paper "Identifying Valuable Pointer in Heap Data" from WOOT 2021
 
+## Overview
+
 This repository contains tools for performing memory cartography attacks and discovering pointers to data sections inside unstructured heap data.
 
 Tested and working with the following environment(s):
@@ -14,7 +16,7 @@ Python Dependencies:
 * selenium (for simulating realistic web server traffic, not required for memory analysis)
 
 
-Steps to reproduce results from the paper:
+## Steps to reproduce results from the paper:
 
 1. Vim
 
@@ -61,7 +63,7 @@ python graph_util.py ff_map/memgraph_final.json --region /usr/lib/firefox/libxul
 
 3. Apache + Heartbleed
 
-For our attack on Apache, we used an Ubuntu 12.04 VM with OpenSSL 1.0.1, which is vulnerable to Heartbleed. The Virtualbox VM image we used is avaiable ![here], and was based off of the image found ![here][http://pages.cs.wisc.edu/~rist/642-spring-2014/hw/hwEC.html] (credit to Thomas Ristenpart). 
+For our attack on Apache, we used an Ubuntu 12.04 VM with OpenSSL 1.0.1, which is vulnerable to Heartbleed. Our VM image was based off of the image found [here](http://pages.cs.wisc.edu/~rist/642-spring-2014/hw/hwEC.html) (credit to Thomas Ristenpart). 
 
 To log into the VM image, select the account called "heartbleed" and enter the password "heartbleed."
 
@@ -107,3 +109,25 @@ python3 refine_memory_map.py '' --outdir apache_map --num_repeats 3
 And analyze connectivity:
 
 python graph_util.py apache_map/memgraph_final.json --region /usr/lib/apache2/modules/libphp5.so_0
+
+## Published Data
+
+Instead of running the experiments on your own system, you can also download the results of our experiments in the form of memory dumps and data structures. After downloading the data, you can perform the analysis yourself to reproduce the results from the paper.
+
+The data from our experiments on Vim, Firefox, and Apache, as well as our HeartBleed VM image, are available [here](https://drive.google.com/drive/u/1/folders/1Fmi7DAaCydWX8G2kt87Zedw5Q8aQQn1h).
+
+To use, simply download, extract the archive, and run the analysis scripts as detailed in the previous section.
+
+Exapmle with the Vim heap:
+
+```
+tar -xf vim_heap.tar.gz 
+python analyze.py vim_heap/ --rank 0
+```
+
+Example with Vim memory map:
+
+```
+tar -xf vim_map.tar.gz
+python graph_util.py vim_map/memgraph_final.json --region /usr/bin/vim.basic_4
+```
