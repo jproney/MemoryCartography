@@ -12,3 +12,5 @@ ds_analysis/*
 *.log
 *.json
 *.pyc
+*.png
+*.csv
