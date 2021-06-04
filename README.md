@@ -1,5 +1,7 @@
 # Code from the Paper "Identifying Valuable Pointers in Heap Data" from WOOT 2021
 
+## [Paper Link](https://mickens.seas.harvard.edu/files/mickens/files/memory_cartography.pdf) 
+
 ## Overview
 
 This repository contains tools for performing memory cartography attacks and discovering pointers to data sections inside unstructured heap data.
