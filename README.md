@@ -1,6 +1,6 @@
 # Code from the Paper "Identifying Valuable Pointers in Heap Data" from WOOT 2021
 
-## [Paper Link](https://mickens.seas.harvard.edu/files/mickens/files/memory_cartography.pdf) 
+## [Paper Link]([https://mickens.seas.harvard.edu/files/mickens/files/memory_cartography.pdf](https://ieeexplore.ieee.org/document/9474326)) 
 
 ## Overview
 
